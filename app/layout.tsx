@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import ThemeRegistry from "../components/ThemeRegistry";
 import "./globals.css";
+import ReduxProvider from "@/redux/provider";
 
 export const metadata: Metadata = {
   title: "Candidate Onboarding",
@@ -15,9 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ThemeRegistry>
+        <ReduxProvider>
+          <ThemeRegistry>
             {children}
-        </ThemeRegistry>
+          </ThemeRegistry>
+        </ReduxProvider>
       </body>
     </html>
   );

@@ -1,16 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Typography, Button, Container, Stepper, Step, StepLabel, Paper, Slide } from '@mui/material';
 import OfferStep from '../../components/onboarding/OfferStep';
 import PersonalInfoStep from '../../components/onboarding/PersonalInfoStep';
 import GuarantorStep from '../../components/onboarding/GuarantorStep';
+import { useSelector } from '@/redux/store';
+import { RootState } from '@reduxjs/toolkit/query';
+import { fetchOfferDetails } from '@/redux/slices/offer';
+
 
 const steps = ['Offer', 'Personal Info', 'Guarantor', 'Final Review'];
 
 export default function OnboardingPage() {
   const [activeStep, setActiveStep] = useState(0); 
+  const {candidate} = useSelector((state) => state.candidates)
+  const {offerDetails} = useSelector((state) => state.offers)
 
+  console.log(candidate)
+
+  useEffect(() => { 
+    if(candidate || offerDetails == null){ 
+        // we want to get the offer letter for the candidate 
+        fetchOfferDetails()
+    }
+  }, [candidate])
+
+  console.log(`the offer details are ${JSON.stringify(offerDetails)}`)
   const handleNext = () => {
     setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
