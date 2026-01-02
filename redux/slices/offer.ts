@@ -5,11 +5,15 @@ import {
   getOfferLetter,
   saveJoiningDetails,
   getJoiningDetails,
+  getGuarantorDetails,
+  saveGuarantorDetails,
 } from "@/api/offer";
+import { GuarantorFormData } from "@/interface/guarantor";
 
 export interface OfferState {
   offerDetails: Partial<OfferDetails> | null;
   joiningDetails: any;
+  guarantorDetails: Partial<GuarantorFormData> | null;
   loading: boolean;
   error: string | null;
 }
@@ -17,6 +21,7 @@ export interface OfferState {
 const initialState: OfferState = {
   offerDetails: null,
   joiningDetails: null,
+  guarantorDetails: null,
   loading: false,
   error: null,
 };
@@ -41,8 +46,16 @@ export const offerSlice = createSlice({
     setJoiningDetails(state, action: PayloadAction<any>) {
       state.joiningDetails = action.payload;
     },
+    setGuarantorDetails(
+      state,
+      action: PayloadAction<Partial<GuarantorFormData>>
+    ) {
+      state.guarantorDetails = action.payload;
+    },
     clearState(state) {
       state.offerDetails = null;
+      state.joiningDetails = null;
+      state.guarantorDetails = null;
       state.error = null;
       state.loading = false;
     },
@@ -54,6 +67,7 @@ export const {
   hasError,
   setOfferDetails,
   setJoiningDetails,
+  setGuarantorDetails,
   clearState,
   stopLoading,
 } = offerSlice.actions;
@@ -86,6 +100,29 @@ export const callSaveJoiningDetails = async (payload: any) => {
   try {
     dispatch(startLoading());
     await saveJoiningDetails(payload);
+  } catch (error: any) {
+    dispatch(hasError(error?.response?.data || error));
+  } finally {
+    dispatch(stopLoading());
+  }
+};
+
+export const callGetGuarantorDetails = async () => {
+  try {
+    dispatch(startLoading());
+    const response = await getGuarantorDetails();
+    dispatch(setGuarantorDetails(response.data));
+  } catch (error: any) {
+    dispatch(hasError(error?.response?.data || error));
+  } finally {
+    dispatch(stopLoading());
+  }
+};
+
+export const callSaveGuarantorDetails = async (payload: any) => {
+  try {
+    dispatch(startLoading());
+    await saveGuarantorDetails(payload);
   } catch (error: any) {
     dispatch(hasError(error?.response?.data || error));
   } finally {

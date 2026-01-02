@@ -1,6 +1,5 @@
 'use client';
-
-import React from 'react';
+import React, { useRef } from 'react';
 import { Box, Typography, Card, Divider, Stack, Button, CircularProgress } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -9,12 +8,34 @@ import { useSelector } from '@/redux/store';
 export default function OfferStep() {
   const { offerDetails, loading } = useSelector((state) => state.offers);
   const { candidate } = useSelector((state) => state.candidates);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
+
+  const handleDownload = async () => {
+    if (!pdfRef.current || !offerDetails) return;
+
+    try {
+      // @ts-ignore
+      const html2pdf = (await import('html2pdf.js')).default;
+      
+      const opt = {
+        margin: [15, 15] as [number, number],
+        filename: `Offer_Letter_${candidate?.first_name || 'Candidate'}_${candidate?.last_name || ''}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+      };
+
+      html2pdf().set(opt).from(pdfRef.current).save();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    }
+  };
 
   if (loading || !offerDetails) {
     return (
@@ -35,13 +56,18 @@ export default function OfferStep() {
         </Typography>
       </Box>
 
-      <Card sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', position: 'relative' }}>
+      <Card 
+        ref={pdfRef}
+        sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', position: 'relative' }}
+      >
           
         {/* Download Button */}
         <Button
             startIcon={<DownloadIcon />}
             variant="outlined"
             size="small"
+            onClick={handleDownload}
+            data-html2canvas-ignore="true"
             sx={{ 
                 position: 'absolute', 
                 top: 24, 
