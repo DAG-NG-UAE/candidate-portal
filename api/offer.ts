@@ -3,7 +3,7 @@ import axiosInstance from "./axiosInstance";
 export const verifyToken = async (token: string) => {
   try {
     const response = await axiosInstance.get(`/offer/verify?token=${token}`);
-    return response.data; // the response of this is the candidate details an like the poisition and name as well as the session that starts if it is successful
+    return response.data;
   } catch (error) {
     return error;
   }
@@ -27,7 +27,7 @@ export const getJoiningDetails = async () => {
   }
 };
 
-export const saveJoiningDetails = async(payload: any) => { 
+export const saveJoiningDetails = async (payload: any) => {
   try {
     const response = await axiosInstance.patch(`/offer/joining/save`, payload);
     return response.data;
@@ -47,7 +47,30 @@ export const getGuarantorDetails = async () => {
 
 export const saveGuarantorDetails = async (payload: any) => {
   try {
-    const response = await axiosInstance.patch(`/offer/guarantor/save`, payload);
+    const response = await axiosInstance.patch(
+      `/offer/guarantor/save`,
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};
+
+export const submitDetails = async (digitalSignature: string) => {
+  try {
+    const response = await axiosInstance.post(`/offer/submit`, {
+      digital_signature: digitalSignature,
+    });
+    return response.data.data;
+  } catch (error) {
+    return error;
+  }
+};
+
+export const rejectOffer = async (reason: string) => {
+  try {
+    const response = await axiosInstance.post(`/offer/reject`, { reason_for_rejecting: reason });
     return response.data;
   } catch (error) {
     return error;

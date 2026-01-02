@@ -1,21 +1,35 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button, Container, Stepper, Step, StepLabel, Paper, Slide } from '@mui/material';
+import { Box, Typography, Button, Container, Stepper, Step, StepLabel, Paper, Slide, Dialog, DialogTitle, DialogContentText, DialogContent, TextField, MenuItem, DialogActions } from '@mui/material';
 import OfferStep from '../../components/onboarding/OfferStep';
 import PersonalInfoStep from '../../components/onboarding/PersonalInfoStep';
 import GuarantorStep from '../../components/onboarding/GuarantorStep';
-import { useSelector } from '@/redux/store';
+import FinalReviewStep from '../../components/onboarding/FinalReviewStep';
+
+import { useDispatch, useSelector } from '@/redux/store';
 import { RootState } from '@reduxjs/toolkit/query';
-import { fetchOfferDetails } from '@/redux/slices/offer';
+import { callSubmitDetails, fetchOfferDetails, clearState as clearOfferState, callRejectOffer } from '@/redux/slices/offer';
+import { clearState as clearCandidateState } from '@/redux/slices/candidate';
+import { useRouter } from 'next/navigation';
 
 
 const steps = ['Offer', 'Personal Info', 'Guarantor', 'Final Review'];
 
 export default function OnboardingPage() {
   const [activeStep, setActiveStep] = useState(0); 
+  const dispatch = useDispatch();
+  const router = useRouter();
   const {candidate} = useSelector((state) => state.candidates)
   const {offerDetails} = useSelector((state) => state.offers)
+  
+  // Final Review State
+  const [acknowledged, setAcknowledged] = useState(false);
+  const [signature, setSignature] = useState('');
+
+  const [openRejectModal, setOpenRejectModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [rejectionSafetyWord, setRejectionSafetyWord] = useState('');
 
   console.log(candidate)
 
@@ -35,6 +49,45 @@ export default function OnboardingPage() {
     setActiveStep((prev) => Math.max(prev - 1, 0));
   };
 
+  const handleFinalSubmit = async () => {
+    const success = await callSubmitDetails(signature);
+    if (success) {
+        dispatch(clearOfferState());
+        dispatch(clearCandidateState());
+        router.push('/success');
+    }
+  };
+
+  const handleDeclineClick = () => {
+    setRejectionSafetyWord('');
+    setOpenRejectModal(true);
+  };
+
+  const handleCloseRejectModal = () => {
+    setOpenRejectModal(false);
+  };
+
+  const handleConfirmReject = async () => {
+    if (!rejectionReason) return;
+    
+    const success = await callRejectOffer(rejectionReason);
+    if (success) {
+        dispatch(clearOfferState());
+        dispatch(clearCandidateState());
+        setOpenRejectModal(false);
+        // Navigate to a thank you/exit page or back to home
+        router.push('/success'); // Reuse success page or a specific rejection page? User implied "completing the onboarding process", so success page might be appropriate generic endpoint, or create a 'declined' page. Given previous turn used /success, maybe stick to it or create a new one. I'll use /success but maybe pass a query param if needed, or just let it trigger the confetti lol. Actually user said "warning that says if they decline, they will be completing the onboarding process". I will use success for now as it clears state.
+    }
+  };
+
+  const rejectionReasons = [
+    'Salary/Compensation not competitive',
+    'Accepted another offer',
+    'Personal/Family reasons',
+    'Role/Responsibility mismatch'
+  ];
+
+
   const getStepContent = (step: number) => {
       switch (step) {
           case 0:
@@ -44,12 +97,12 @@ export default function OnboardingPage() {
           case 2:
               return <GuarantorStep />;
           case 3:
-              return (
-                  <Box sx={{ textAlign: 'center', py: 8 }}>
-                      <Typography variant="h5">Final Review</Typography>
-                      <Typography color="text.secondary">Review all your details before submitting.</Typography>
-                  </Box>
-              );
+              return <FinalReviewStep 
+                        acknowledged={acknowledged} 
+                        setAcknowledged={setAcknowledged} 
+                        signature={signature} 
+                        setSignature={setSignature} 
+                     />;
           default:
               return null;
       }
@@ -70,7 +123,7 @@ export default function OnboardingPage() {
                 Onboarding Journey
                 </Typography>
                 <Typography variant="body1" sx={{ color: '#64748B' }}>
-                Complete all steps to join the team
+                Complete all steps to accept the offer
                 </Typography>
             </Box>
 
@@ -142,6 +195,7 @@ export default function OnboardingPage() {
                             variant="outlined"
                             size="large"
                             color="error"
+                            onClick={handleDeclineClick}
                             sx={{ 
                                 minWidth: 120,
                                 borderRadius: '10px',
@@ -168,7 +222,8 @@ export default function OnboardingPage() {
                     <Button 
                         variant="contained"
                         size="large"
-                        onClick={handleNext}
+                        onClick={activeStep === steps.length - 1 ? handleFinalSubmit : handleNext}
+                        disabled={activeStep === steps.length - 1 && (!acknowledged || !signature)}
                         sx={{ 
                             minWidth: 160,
                             borderRadius: '10px',
@@ -181,12 +236,69 @@ export default function OnboardingPage() {
                             }
                         }}
                     >
-                        {activeStep === steps.length - 1 ? 'Submit' : 'Continue'}
+                        {activeStep === steps.length - 1 ? 'Finalize and Submit' : 'Continue'}
                     </Button>
                 )}
             </Box>
         </Container>
       </Paper>
+
+       <Dialog open={openRejectModal} onClose={handleCloseRejectModal} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ color: '#EF4444', fontWeight: 600 }}>Decline Offer</DialogTitle>
+        <DialogContent>
+            <DialogContentText sx={{ mb: 3 }}>
+                Are you sure you want to decline this offer? 
+                This action is irreversible and will end the onboarding process. 
+                The offer will be formally rejected.
+            </DialogContentText>
+            <TextField
+                select
+                autoFocus
+                margin="dense"
+                id="reason"
+                label="Reason for Declining"
+                fullWidth
+                variant="outlined"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+            >
+                {rejectionReasons.map((option) => (
+                    <MenuItem key={option} value={option}>
+                        {option}
+                    </MenuItem>
+                ))}
+            </TextField>
+            <Box sx={{ mt: 2 }}>
+                <DialogContentText sx={{ mb: 1, fontSize: '0.9rem', color: '#64748B' }}>
+                    To confirm, please type <strong>DECLINE</strong> below:
+                </DialogContentText>
+                <TextField
+                    placeholder="DECLINE"
+                    fullWidth
+                    variant="outlined"
+                    value={rejectionSafetyWord}
+                    onChange={(e) => setRejectionSafetyWord(e.target.value)}
+                    size="small"
+                />
+            </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0 }}>
+            <Button onClick={handleCloseRejectModal} sx={{ color: '#64748B' }}>
+                Cancel
+            </Button>
+            <Button 
+                onClick={handleConfirmReject} 
+                variant="contained" 
+                color="error"
+                disabled={!rejectionReason || rejectionSafetyWord.trim() !== 'DECLINE'}
+                sx={{ boxShadow: 'none' }}
+            >
+                Confirm Decline
+            </Button>
+        </DialogActions>
+      </Dialog>
+
+      
     </Box>
   );
 }

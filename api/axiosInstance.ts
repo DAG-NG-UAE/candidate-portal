@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { dispatch } from '@/redux/dispatchHandle';
+import { clearState } from '@/redux/slices/candidate';
+import { clearState as clearOfferState } from '@/redux/slices/offer';
 
 // Base URL for your API (can be configured via environment variables)
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'; // Backend url - Base URL should not include specific endpoints like /api or /requisition
@@ -30,8 +32,11 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.response) {
-      if (error.response.status === 401 || error.message === 'Candidate authentication required. Session expired or invalid.') {
+      if (error.response.status === 401 || error.message === 'Candidate authentication required. Session expired or invalid.' || error.message === 'You have completed the joining form. Thank you ') {
         //we should probably tell them to verify their token again so do we grey out the pages and show the verify token page
+        dispatch(clearState())
+        dispatch(clearOfferState())
+        window.location.href = '/success';
       }
       console.log(`the error response is => ${error}`)
     

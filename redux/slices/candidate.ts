@@ -48,6 +48,12 @@ export const verifyCandidateToken = async (token: string) => {
     try {
         dispatch(startLoading());
         const response = await verifyToken(token);
+        if(response.data.length == 0){ 
+            //send them to the success page
+            dispatch(clearState());
+            window.location.href = '/success';
+            
+        }
         dispatch(setCandidate(response.data[0]));
     } catch (error:any) {
         dispatch(hasError(error?.response?.data || error));

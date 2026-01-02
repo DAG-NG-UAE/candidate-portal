@@ -7,6 +7,8 @@ import {
   getJoiningDetails,
   getGuarantorDetails,
   saveGuarantorDetails,
+  submitDetails,
+  rejectOffer,
 } from "@/api/offer";
 import { GuarantorFormData } from "@/interface/guarantor";
 
@@ -125,6 +127,38 @@ export const callSaveGuarantorDetails = async (payload: any) => {
     await saveGuarantorDetails(payload);
   } catch (error: any) {
     dispatch(hasError(error?.response?.data || error));
+  } finally {
+    dispatch(stopLoading());
+  }
+};
+
+export const callSubmitDetails = async (digitalSignature: string) => {
+  try {
+    dispatch(startLoading());
+    const result = await submitDetails(digitalSignature);
+    if (result.success) {
+      return true;
+    }
+    return false;
+  } catch (error: any) {
+    dispatch(hasError(error?.response?.data || error));
+    return false;
+  } finally {
+    dispatch(stopLoading());
+  }
+};
+
+export const callRejectOffer = async (reason: string) => {
+  try {
+    dispatch(startLoading());
+    const result = await rejectOffer(reason);
+    if (result.success) {
+      return true;
+    }
+    return false;
+  } catch (error: any) {
+    dispatch(hasError(error?.response?.data || error));
+    return false;
   } finally {
     dispatch(stopLoading());
   }
