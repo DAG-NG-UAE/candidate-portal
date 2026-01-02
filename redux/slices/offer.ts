@@ -1,17 +1,22 @@
-
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { dispatch } from "../dispatchHandle";
 import { OfferDetails } from "@/interface/offer";
-import { getOfferLetter } from "@/api/offer";
+import {
+  getOfferLetter,
+  saveJoiningDetails,
+  getJoiningDetails,
+} from "@/api/offer";
 
 export interface OfferState {
   offerDetails: Partial<OfferDetails> | null;
+  joiningDetails: any;
   loading: boolean;
   error: string | null;
 }
 
 const initialState: OfferState = {
   offerDetails: null,
+  joiningDetails: null,
   loading: false,
   error: null,
 };
@@ -33,6 +38,9 @@ export const offerSlice = createSlice({
     setOfferDetails(state, action: PayloadAction<Partial<OfferDetails>>) {
       state.offerDetails = action.payload;
     },
+    setJoiningDetails(state, action: PayloadAction<any>) {
+      state.joiningDetails = action.payload;
+    },
     clearState(state) {
       state.offerDetails = null;
       state.error = null;
@@ -45,6 +53,7 @@ export const {
   startLoading,
   hasError,
   setOfferDetails,
+  setJoiningDetails,
   clearState,
   stopLoading,
 } = offerSlice.actions;
@@ -54,6 +63,29 @@ export const fetchOfferDetails = async () => {
     dispatch(startLoading());
     const response = await getOfferLetter();
     dispatch(setOfferDetails(response.data));
+  } catch (error: any) {
+    dispatch(hasError(error?.response?.data || error));
+  } finally {
+    dispatch(stopLoading());
+  }
+};
+
+export const callGetJoiningDetails = async () => {
+  try {
+    dispatch(startLoading());
+    const response = await getJoiningDetails();
+    dispatch(setJoiningDetails(response.data));
+  } catch (error: any) {
+    dispatch(hasError(error?.response?.data || error));
+  } finally {
+    dispatch(stopLoading());
+  }
+};
+
+export const callSaveJoiningDetails = async (payload: any) => {
+  try {
+    dispatch(startLoading());
+    await saveJoiningDetails(payload);
   } catch (error: any) {
     dispatch(hasError(error?.response?.data || error));
   } finally {

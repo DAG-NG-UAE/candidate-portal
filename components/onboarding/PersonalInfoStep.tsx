@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
     Box, Typography, TextField, MenuItem, 
     Accordion, AccordionSummary, AccordionDetails, 
@@ -11,6 +11,8 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { JoiningFormData } from '@/interface/joining';
+import { callSaveJoiningDetails, callGetJoiningDetails } from '@/redux/slices/offer';
+import { useSelector } from '@/redux/store';
 
 const initialFormData: JoiningFormData = {
     first_name: '', last_name: '', middle_name: '', gender: '', dob: null,
@@ -22,7 +24,7 @@ const initialFormData: JoiningFormData = {
     bank_name: '', account_number: '', account_type: '', pension_fund_account: '', gross_salary: 'Confidential',
     relatives_in_company: { has_relative: 'No', name: '', relation: '', dept: '' },
     family_members: [],
-    next_of_kin: { name: '', relationship: '', share_percentage: 100, address: '', phone: '' },
+    next_of_kin: { name: '', relationship: '', age: 0, address: '', phone: '' },
     emergency_primary: { name: '', relationship: '', address: '', phone: '' },
     references: [{ name: '', contact_no: '' }, { name: '', contact_no: '' }],
     employment_history: [],
@@ -41,9 +43,72 @@ const sections = [
 ];
 
 export default function JoiningForm() {
+    const { joiningDetails } = useSelector((state: any) => state.offers);
     const [formData, setFormData] = useState<JoiningFormData>(initialFormData);
     const [expanded, setExpanded] = useState<string | false>('personal');
     const [completedSections, setCompletedSections] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        callGetJoiningDetails();
+    }, []);
+
+    useEffect(() => {
+        if (joiningDetails) {
+            const formatDate = (dateStr: string | null) => dateStr ? dateStr.split('T')[0] : null;
+
+            setFormData(prev => ({
+                ...prev,
+                ...joiningDetails,
+                // Override simple fields that match
+                first_name: joiningDetails.first_name || prev.first_name,
+                last_name: joiningDetails.last_name || prev.last_name,
+                middle_name: joiningDetails.middle_name || prev.middle_name,
+                gender: joiningDetails.gender || prev.gender,
+                dob: formatDate(joiningDetails.dob), // Ensure format YYYY-MM-DD
+                place_of_birth: joiningDetails.place_of_birth || prev.place_of_birth,
+                country_of_birth: joiningDetails.country_of_birth || prev.country_of_birth,
+                nationality: joiningDetails.nationality || prev.nationality,
+                marital_status: joiningDetails.marital_status || prev.marital_status,
+                religion: joiningDetails.religion || prev.religion,
+                blood_group: joiningDetails.blood_group || prev.blood_group,
+                
+                // Contact
+                permanent_address: joiningDetails.permanent_address || prev.permanent_address,
+                current_address: joiningDetails.current_address || prev.current_address,
+                mobile_nigeria: joiningDetails.mobile_nigeria || prev.mobile_nigeria,
+                personal_email: joiningDetails.personal_email || prev.personal_email,
+
+                // Identification
+                passport_number: joiningDetails.passport_number || prev.passport_number,
+                passport_place_of_issue: joiningDetails.passport_place_of_issue || prev.passport_place_of_issue,
+                passport_issue_date: formatDate(joiningDetails.passport_issue_date),
+                passport_expiry_date: formatDate(joiningDetails.passport_expiry_date),
+                has_driving_license: joiningDetails.has_driving_license ? 'Yes' : 'No', // boolean to Yes/No
+                driving_license_number: joiningDetails.driving_license_number || prev.driving_license_number,
+                
+                // Financials
+                bank_name: joiningDetails.bank_name || prev.bank_name,
+                account_number: joiningDetails.account_number || prev.account_number,
+                account_type: joiningDetails.account_type || prev.account_type,
+                pension_fund_account: joiningDetails.pension_fund_account || prev.pension_fund_account,
+                
+                // Arrays and Objects - Ensure we use API data if available, else empty/default
+                languages: (joiningDetails.languages && joiningDetails.languages.length > 0) ? joiningDetails.languages : prev.languages,
+                family_members: (joiningDetails.family_members && joiningDetails.family_members.length > 0) ? joiningDetails.family_members : prev.family_members,
+                employment_history: (joiningDetails.employment_history && joiningDetails.employment_history.length > 0) ? joiningDetails.employment_history : prev.employment_history,
+                educational_history: (joiningDetails.educational_history && joiningDetails.educational_history.length > 0) ? joiningDetails.educational_history : prev.educational_history,
+                
+                // Objects - check if empty
+                next_of_kin: (joiningDetails.next_of_kin && Object.keys(joiningDetails.next_of_kin).length > 0) ? {
+                    ...joiningDetails.next_of_kin,
+                    age: joiningDetails.next_of_kin.age || joiningDetails.next_of_kin.share_percentage || 0
+                } : prev.next_of_kin,
+                emergency_primary: (joiningDetails.emergency_primary && Object.keys(joiningDetails.emergency_primary).length > 0) ? joiningDetails.emergency_primary : prev.emergency_primary,
+                relatives_in_company: (joiningDetails.relatives_in_company && Object.keys(joiningDetails.relatives_in_company).length > 0) ? joiningDetails.relatives_in_company : prev.relatives_in_company,
+                references: (joiningDetails.job_references && joiningDetails.job_references.length > 0) ? joiningDetails.job_references : prev.references,
+            }));
+        }
+    }, [joiningDetails]);
 
     const handleChange = (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
         setExpanded(isExpanded ? panel : false);
@@ -83,7 +148,74 @@ export default function JoiningForm() {
         });
     };
 
-    const markComplete = (sectionId: string) => {
+    const markComplete = async (sectionId: string) => {
+        let payload = {};
+        switch (sectionId) {
+            case 'personal':
+                payload = {
+                    middle_name: formData.middle_name,
+                    gender: formData.gender,
+                    dob: formData.dob,
+                    place_of_birth: formData.place_of_birth,
+                    country_of_birth: formData.country_of_birth,
+                    nationality: formData.nationality,
+                    marital_status: formData.marital_status,
+                    religion: formData.religion,
+                    blood_group: formData.blood_group,
+                    languages: formData.languages
+                };
+                break;
+            case 'contact':
+                payload = {
+                    permanent_address: formData.permanent_address,
+                    current_address: formData.current_address,
+                    mobile_nigeria: formData.mobile_nigeria,
+                    personal_email: formData.personal_email
+                };
+                break;
+            case 'identification':
+                payload = {
+                    passport_number: formData.passport_number,
+                    passport_issue_date: formData.passport_issue_date,
+                    passport_expiry_date: formData.passport_expiry_date,
+                    passport_place_of_issue: formData.passport_place_of_issue,
+                    has_driving_license: formData.has_driving_license == 'No' ? false : true,
+                    driving_license_number: formData.driving_license_number
+                };
+                break;
+            case 'financials':
+                payload = {
+                    bank_name: formData.bank_name,
+                    account_number: formData.account_number,
+                    account_type: formData.account_type,
+                    pension_fund_account: formData.pension_fund_account
+                };
+                break;
+            case 'family':
+                payload = {
+                    relatives_in_company: formData.relatives_in_company,
+                    family_members: formData.family_members,
+                    next_of_kin: formData.next_of_kin
+                };
+                break;
+            case 'emergency':
+                payload = {
+                    emergency_primary: formData.emergency_primary,
+                    job_references: formData.references
+                };
+                break;
+            case 'history':
+                payload = {
+                    employment_history: formData.employment_history,
+                    educational_history: formData.educational_history,
+                    trainings_certifications: formData.trainings_certifications
+                };
+                break;
+        }
+
+        console.log(`Saving ${sectionId} section payload:`, JSON.stringify(payload, null, 2), payload);
+
+        await callSaveJoiningDetails(payload)
         const newCompleted = new Set(completedSections);
         newCompleted.add(sectionId);
         setCompletedSections(newCompleted);
@@ -94,6 +226,9 @@ export default function JoiningForm() {
         } else {
             setExpanded(false);
         }
+
+        //  we want to call the api to save the payload
+        
     };
 
     // Helper: Half width on small screens and up, full width on extra small
@@ -110,7 +245,7 @@ export default function JoiningForm() {
     );
 
     const renderSelect = (label: string, value: any, onChange: (val: string) => void, options: string[], width = 'half') => (
-        <Box sx={{ width: { xs: '100%', sm: width === 'full' ? '100%' : 'calc(50% - 8px)' } }}>
+        <Box sx={{ width: { xs: '100%', sm: width === 'full' ? '100%' : width === 'third' ? 'calc(33.33% - 11px)' : 'calc(50% - 8px)' } }}>
             <TextField
                 select fullWidth label={label} value={value || ''}
                 onChange={(e) => onChange(e.target.value)}
@@ -264,7 +399,7 @@ export default function JoiningForm() {
                         {formData.relatives_in_company.has_relative === 'Yes' && (
                             <>
                                 {renderTextField("Name", formData.relatives_in_company.name, v => handleFieldChange("relatives_in_company", v, "name"), "text", 'third')}
-                                {renderTextField("Relation", formData.relatives_in_company.relation, v => handleFieldChange("relatives_in_company", v, "relation"), "text", 'third')}
+                                {renderSelect("Relation", formData.relatives_in_company.relation, v => handleFieldChange("relatives_in_company", v, "relation"), ["Father", "Mother", "Brother", "Sister", "Uncle", "Aunty", "Cousin"], 'third')}
                                 {renderTextField("Department", formData.relatives_in_company.dept, v => handleFieldChange("relatives_in_company", v, "dept"), "text", 'third')}
                             </>
                         )}
@@ -288,7 +423,7 @@ export default function JoiningForm() {
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                         {renderTextField("Name", formData.next_of_kin.name, v => handleFieldChange("next_of_kin", v, "name"), "text", 'third')}
                         {renderTextField("Relationship", formData.next_of_kin.relationship, v => handleFieldChange("next_of_kin", v, "relationship"), "text", 'third')}
-                        {renderTextField("Share %", formData.next_of_kin.share_percentage, v => handleFieldChange("next_of_kin", v, "share_percentage"), "number", 'third')}
+                        {renderTextField("Age", formData.next_of_kin.age, v => handleFieldChange("next_of_kin", v, "age"), "number", 'third')}
                         {renderTextField("Address", formData.next_of_kin.address, v => handleFieldChange("next_of_kin", v, "address"), "text", 'half')}
                         {renderTextField("Phone", formData.next_of_kin.phone, v => handleFieldChange("next_of_kin", v, "phone"), "text", 'half')}
                     </Box>

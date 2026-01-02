@@ -17,3 +17,21 @@ export const getOfferLetter = async () => {
         return error;
     }
 }
+
+export const getJoiningDetails = async () => { 
+    try {
+        const response = await axiosInstance.get(`/offer/joining/details`);
+        return response.data;
+    } catch (error) {
+        return error;
+    }
+}
+
+export const saveJoiningDetails = async(payload: any) => { 
+    try {
+        const response = await axiosInstance.patch(`/offer/joining/save`, payload);
+        return response.data;
+    } catch (error) {
+        return error;
+    }
+}

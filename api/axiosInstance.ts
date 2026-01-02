@@ -29,7 +29,17 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (error.response) {
+      if (error.response.status === 401 || error.message === 'Candidate authentication required. Session expired or invalid.') {
+        //we should probably tell them to verify their token again so do we grey out the pages and show the verify token page
+      }
       console.log(`the error response is => ${error}`)
+    
+    }  else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('API Request Error:', error);
+    }
+      
       return Promise.reject(error);
   }
   

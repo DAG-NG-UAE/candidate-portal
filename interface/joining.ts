@@ -86,7 +86,7 @@ export interface JoiningFormData {
   next_of_kin: {
     name: string;
     relationship: string;
-    share_percentage: number;
+    age: number;
     address: string; // Often needed
     phone: string; // Often needed
   };
