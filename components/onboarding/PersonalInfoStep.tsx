@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     Box, Typography, TextField, MenuItem, 
     Accordion, AccordionSummary, AccordionDetails, 
-    Button, Checkbox, FormControlLabel, IconButton, Divider, Stack 
+    Button, Checkbox, FormControlLabel, IconButton, Divider, Stack, CircularProgress 
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -47,6 +47,7 @@ export default function JoiningForm() {
     const [formData, setFormData] = useState<JoiningFormData>(initialFormData);
     const [expanded, setExpanded] = useState<string | false>('personal');
     const [completedSections, setCompletedSections] = useState<Set<string>>(new Set());
+    const [loadingSection, setLoadingSection] = useState<string | null>(null);
 
     useEffect(() => {
         callGetJoiningDetails();
@@ -149,6 +150,8 @@ export default function JoiningForm() {
     };
 
     const markComplete = async (sectionId: string) => {
+        setLoadingSection(sectionId);
+        try {
         let payload = {};
         switch (sectionId) {
             case 'personal':
@@ -227,8 +230,11 @@ export default function JoiningForm() {
             setExpanded(false);
         }
 
-        //  we want to call the api to save the payload
-        
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoadingSection(null);
+        }
     };
 
     // Helper: Half width on small screens and up, full width on extra small
@@ -304,7 +310,11 @@ export default function JoiningForm() {
                         </Box>
                         
                         <Box sx={{ width: '100%' }}>
-                            <Button variant="contained" onClick={() => markComplete('personal')}>Save & Next</Button>
+                            {loadingSection === 'personal' ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress size={24} /></Box>
+                            ) : (
+                                <Button variant="contained" onClick={() => markComplete('personal')}>Save & Next</Button>
+                            )}
                         </Box>
                     </Box>
                 </AccordionDetails>
@@ -329,7 +339,11 @@ export default function JoiningForm() {
                         {renderTextField("Mobile (Nigeria)", formData.mobile_nigeria, v => handleFieldChange("mobile_nigeria", v))}
                         {renderTextField("Personal Email", formData.personal_email, v => handleFieldChange("personal_email", v), "email")}
                          <Box sx={{ width: '100%' }}>
-                            <Button variant="contained" onClick={() => markComplete('contact')}>Save & Next</Button>
+                            {loadingSection === 'contact' ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress size={24} /></Box>
+                            ) : (
+                                <Button variant="contained" onClick={() => markComplete('contact')}>Save & Next</Button>
+                            )}
                         </Box>
                     </Box>
                 </AccordionDetails>
@@ -354,7 +368,11 @@ export default function JoiningForm() {
                         {formData.has_driving_license === 'Yes' && renderTextField("License Number", formData.driving_license_number, v => handleFieldChange("driving_license_number", v))}
                         
                          <Box sx={{ width: '100%' }}>
-                            <Button variant="contained" onClick={() => markComplete('identification')}>Save & Next</Button>
+                            {loadingSection === 'identification' ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress size={24} /></Box>
+                            ) : (
+                                <Button variant="contained" onClick={() => markComplete('identification')}>Save & Next</Button>
+                            )}
                         </Box>
                     </Box>
                 </AccordionDetails>
@@ -378,7 +396,11 @@ export default function JoiningForm() {
                             <TextField fullWidth label="Gross Salary" value={formData.gross_salary} disabled />
                         </Box>
                         <Box sx={{ width: '100%' }}>
-                            <Button variant="contained" onClick={() => markComplete('financials')}>Save & Next</Button>
+                            {loadingSection === 'financials' ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress size={24} /></Box>
+                            ) : (
+                                <Button variant="contained" onClick={() => markComplete('financials')}>Save & Next</Button>
+                            )}
                         </Box>
                     </Box>
                 </AccordionDetails>
@@ -428,7 +450,11 @@ export default function JoiningForm() {
                         {renderTextField("Phone", formData.next_of_kin.phone, v => handleFieldChange("next_of_kin", v, "phone"), "text", 'half')}
                     </Box>
                      <Box sx={{ mt: 2 }}>
-                        <Button variant="contained" onClick={() => markComplete('family')}>Save & Next</Button>
+                        {loadingSection === 'family' ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress size={24} /></Box>
+                        ) : (
+                            <Button variant="contained" onClick={() => markComplete('family')}>Save & Next</Button>
+                        )}
                     </Box>
                 </AccordionDetails>
             </Accordion>
@@ -461,7 +487,11 @@ export default function JoiningForm() {
                         </Box>
                     ))}
                     <Box sx={{ mt: 2 }}>
-                        <Button variant="contained" onClick={() => markComplete('emergency')}>Save & Next</Button>
+                        {loadingSection === 'emergency' ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress size={24} /></Box>
+                        ) : (
+                            <Button variant="contained" onClick={() => markComplete('emergency')}>Save & Next</Button>
+                        )}
                     </Box>
                 </AccordionDetails>
             </Accordion>
@@ -505,7 +535,11 @@ export default function JoiningForm() {
                      <Button startIcon={<AddCircleOutlineIcon />} onClick={() => addArrayItem('educational_history', { qualification: '', institute: '', specialization: '', passing_year: '' })}>Add Education</Button>
                      
                      <Box sx={{ mt: 2 }}>
-                        <Button variant="contained" onClick={() => markComplete('history')}>Save & Finish</Button>
+                        {loadingSection === 'history' ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}><CircularProgress size={24} /></Box>
+                        ) : (
+                            <Button variant="contained" onClick={() => markComplete('history')}>Save & Finish</Button>
+                        )}
                     </Box>
                 </AccordionDetails>
             </Accordion>

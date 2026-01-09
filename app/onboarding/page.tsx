@@ -9,7 +9,7 @@ import FinalReviewStep from '../../components/onboarding/FinalReviewStep';
 
 import { useDispatch, useSelector } from '@/redux/store';
 import { RootState } from '@reduxjs/toolkit/query';
-import { callSubmitDetails, fetchOfferDetails, clearState as clearOfferState, callRejectOffer } from '@/redux/slices/offer';
+import { callSubmitDetails, fetchOfferDetails, clearState as clearOfferState, callRejectOffer, callAcceptOffer } from '@/redux/slices/offer';
 import { clearState as clearCandidateState } from '@/redux/slices/candidate';
 import { useRouter } from 'next/navigation';
 
@@ -42,6 +42,8 @@ export default function OnboardingPage() {
 
   console.log(`the offer details are ${JSON.stringify(offerDetails)}`)
   const handleNext = () => {
+    //we want to accept the offer
+    callAcceptOffer()
     setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
 

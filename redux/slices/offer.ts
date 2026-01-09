@@ -9,8 +9,10 @@ import {
   saveGuarantorDetails,
   submitDetails,
   rejectOffer,
+  acceptOffer,
 } from "@/api/offer";
 import { GuarantorFormData } from "@/interface/guarantor";
+import { enqueueSnackbar } from 'notistack';
 
 export interface OfferState {
   offerDetails: Partial<OfferDetails> | null;
@@ -124,9 +126,15 @@ export const callGetGuarantorDetails = async () => {
 export const callSaveGuarantorDetails = async (payload: any) => {
   try {
     dispatch(startLoading());
-    await saveGuarantorDetails(payload);
+    const result = await saveGuarantorDetails(payload);
+    if(result.success){ 
+      enqueueSnackbar('Guarantor details saved successfully', { variant: 'success' });
+    }else{ 
+      enqueueSnackbar(result.message, { variant: 'error' });
+    }
   } catch (error: any) {
     dispatch(hasError(error?.response?.data || error));
+    enqueueSnackbar(error?.response?.data?.message, { variant: 'error' });
   } finally {
     dispatch(stopLoading());
   }
@@ -152,6 +160,22 @@ export const callRejectOffer = async (reason: string) => {
   try {
     dispatch(startLoading());
     const result = await rejectOffer(reason);
+    if (result.success) {
+      return true;
+    }
+    return false;
+  } catch (error: any) {
+    dispatch(hasError(error?.response?.data || error));
+    return false;
+  } finally {
+    dispatch(stopLoading());
+  }
+};
+
+export const callAcceptOffer = async () => {
+  try {
+    dispatch(startLoading());
+    const result = await acceptOffer();
     if (result.success) {
       return true;
     }

@@ -76,3 +76,12 @@ export const rejectOffer = async (reason: string) => {
     return error;
   }
 };
+
+export const acceptOffer = async () => {
+  try {
+    const response = await axiosInstance.post(`/offer/accept`);
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};
