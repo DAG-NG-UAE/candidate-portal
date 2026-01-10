@@ -10,9 +10,10 @@ import {
   submitDetails,
   rejectOffer,
   acceptOffer,
+  saveDocuments,
 } from "@/api/offer";
 import { GuarantorFormData } from "@/interface/guarantor";
-import { enqueueSnackbar } from 'notistack';
+import { enqueueSnackbar } from "notistack";
 
 export interface OfferState {
   offerDetails: Partial<OfferDetails> | null;
@@ -127,14 +128,16 @@ export const callSaveGuarantorDetails = async (payload: any) => {
   try {
     dispatch(startLoading());
     const result = await saveGuarantorDetails(payload);
-    if(result.success){ 
-      enqueueSnackbar('Guarantor details saved successfully', { variant: 'success' });
-    }else{ 
-      enqueueSnackbar(result.message, { variant: 'error' });
+    if (result.success) {
+      enqueueSnackbar("Guarantor details saved successfully", {
+        variant: "success",
+      });
+    } else {
+      enqueueSnackbar(result.message, { variant: "error" });
     }
   } catch (error: any) {
     dispatch(hasError(error?.response?.data || error));
-    enqueueSnackbar(error?.response?.data?.message, { variant: 'error' });
+    enqueueSnackbar(error?.response?.data?.message, { variant: "error" });
   } finally {
     dispatch(stopLoading());
   }
@@ -182,6 +185,32 @@ export const callAcceptOffer = async () => {
     return false;
   } catch (error: any) {
     dispatch(hasError(error?.response?.data || error));
+    return false;
+  } finally {
+    dispatch(stopLoading());
+  }
+};
+
+export const callSaveDocuments = async (formData: FormData) => {
+  try {
+    dispatch(startLoading());
+    const result = await saveDocuments(formData);
+    if (result.success) {
+      enqueueSnackbar("Documents uploaded successfully", {
+        variant: "success",
+      });
+      return true;
+    } else {
+      enqueueSnackbar(result.message || "Failed to upload documents", {
+        variant: "error",
+      });
+      return false;
+    }
+  } catch (error: any) {
+    dispatch(hasError(error?.response?.data || error));
+    enqueueSnackbar(error?.message || "Error uploading documents", {
+      variant: "error",
+    });
     return false;
   } finally {
     dispatch(stopLoading());

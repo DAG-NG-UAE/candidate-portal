@@ -70,7 +70,9 @@ export const submitDetails = async (digitalSignature: string) => {
 
 export const rejectOffer = async (reason: string) => {
   try {
-    const response = await axiosInstance.post(`/offer/reject`, { reason_for_rejecting: reason });
+    const response = await axiosInstance.post(`/offer/reject`, {
+      reason_for_rejecting: reason,
+    });
     return response.data;
   } catch (error) {
     return error;
@@ -80,6 +82,23 @@ export const rejectOffer = async (reason: string) => {
 export const acceptOffer = async () => {
   try {
     const response = await axiosInstance.post(`/offer/accept`);
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};
+
+export const saveDocuments = async (formData: FormData) => {
+  try {
+    const response = await axiosInstance.post(
+      `/application/document/save`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
     return response.data;
   } catch (error) {
     return error;

@@ -5,16 +5,17 @@ import { Box, Typography, Button, Container, Stepper, Step, StepLabel, Paper, Sl
 import OfferStep from '../../components/onboarding/OfferStep';
 import PersonalInfoStep from '../../components/onboarding/PersonalInfoStep';
 import GuarantorStep from '../../components/onboarding/GuarantorStep';
+import DocumentUploadStep from '../../components/onboarding/DocumentUploadStep';
 import FinalReviewStep from '../../components/onboarding/FinalReviewStep';
 
 import { useDispatch, useSelector } from '@/redux/store';
 import { RootState } from '@reduxjs/toolkit/query';
-import { callSubmitDetails, fetchOfferDetails, clearState as clearOfferState, callRejectOffer, callAcceptOffer } from '@/redux/slices/offer';
+import { callSubmitDetails, fetchOfferDetails, clearState as clearOfferState, callRejectOffer, callAcceptOffer, callSaveDocuments } from '@/redux/slices/offer';
 import { clearState as clearCandidateState } from '@/redux/slices/candidate';
 import { useRouter } from 'next/navigation';
 
 
-const steps = ['Offer', 'Personal Info', 'Guarantor', 'Final Review'];
+const steps = ['Offer', 'Personal Info', 'Guarantor', 'Documents', 'Final Review'];
 
 export default function OnboardingPage() {
   const [activeStep, setActiveStep] = useState(0); 
@@ -23,6 +24,10 @@ export default function OnboardingPage() {
   const {candidate} = useSelector((state) => state.candidates)
   const {offerDetails} = useSelector((state) => state.offers)
   
+  // Document Upload State
+  const [passportFile, setPassportFile] = useState<File | null>(null);
+  const [certificateFiles, setCertificateFiles] = useState<File[]>([]);
+
   // Final Review State
   const [acknowledged, setAcknowledged] = useState(false);
   const [signature, setSignature] = useState('');
@@ -40,7 +45,7 @@ export default function OnboardingPage() {
     }
   }, [candidate])
 
-  console.log(`the offer details are ${JSON.stringify(offerDetails)}`)
+//   console.log(`the offer details are ${JSON.stringify(offerDetails)}`)
   const handleNext = () => {
     //we want to accept the offer
     callAcceptOffer()
@@ -51,7 +56,37 @@ export default function OnboardingPage() {
     setActiveStep((prev) => Math.max(prev - 1, 0));
   };
 
+  const handleSaveDocuments = async () => {
+      const formData = new FormData();
+      if (passportFile) {
+          formData.append('passport', passportFile);
+      }
+      certificateFiles.forEach((file) => {
+          formData.append('certificates', file);
+      });
+      // Add other necessary details if required by backend, e.g. candidate ID
+       if (candidate?.candidate_id) {
+            console.log(`the candidate id is ${candidate.candidate_id}`)
+          formData.append('candidateId', candidate.candidate_id);
+      }
+      if(candidate?.offer_id){ 
+        console.log(`the offer id is ${candidate.offer_id}`)
+        formData.append('offerId', candidate.offer_id);
+      }
+
+      console.log("FormData entries:");
+      // FormData cannot be stringified directly; we must iterate to see contents
+      // @ts-ignore
+      for (const [key, value] of formData.entries()) {
+          console.log(`${key}:`, value);
+      }
+
+      await callSaveDocuments(formData);
+  };
+
   const handleFinalSubmit = async () => {
+    // You might want to upload documents here before final submission
+    // For now, we proceed with signature submission
     const success = await callSubmitDetails(signature);
     if (success) {
         dispatch(clearOfferState());
@@ -78,7 +113,7 @@ export default function OnboardingPage() {
         dispatch(clearCandidateState());
         setOpenRejectModal(false);
         // Navigate to a thank you/exit page or back to home
-        router.push('/success'); // Reuse success page or a specific rejection page? User implied "completing the onboarding process", so success page might be appropriate generic endpoint, or create a 'declined' page. Given previous turn used /success, maybe stick to it or create a new one. I'll use /success but maybe pass a query param if needed, or just let it trigger the confetti lol. Actually user said "warning that says if they decline, they will be completing the onboarding process". I will use success for now as it clears state.
+        router.push('/success'); 
     }
   };
 
@@ -99,6 +134,14 @@ export default function OnboardingPage() {
           case 2:
               return <GuarantorStep />;
           case 3:
+              return <DocumentUploadStep 
+                        passportFile={passportFile}
+                        setPassportFile={setPassportFile}
+                        certificateFiles={certificateFiles}
+                        setCertificateFiles={setCertificateFiles}
+                        onSave={handleSaveDocuments}
+                     />;
+          case 4:
               return <FinalReviewStep 
                         acknowledged={acknowledged} 
                         setAcknowledged={setAcknowledged} 
@@ -114,7 +157,7 @@ export default function OnboardingPage() {
     <Box sx={{ 
         height: '100vh', 
         display: 'flex', 
-        flexDirection: 'column',
+        flexDirection: 'column', 
         bgcolor: '#F8FAFC' 
     }}>
       {/* Scrollable Content Area */}
@@ -225,7 +268,10 @@ export default function OnboardingPage() {
                         variant="contained"
                         size="large"
                         onClick={activeStep === steps.length - 1 ? handleFinalSubmit : handleNext}
-                        disabled={activeStep === steps.length - 1 && (!acknowledged || !signature)}
+                        disabled={
+                            (activeStep === steps.length - 1 && (!acknowledged || !signature)) ||
+                            (activeStep === 3 && !passportFile) // Ensure passport is uploaded in step 3
+                        }
                         sx={{ 
                             minWidth: 160,
                             borderRadius: '10px',
