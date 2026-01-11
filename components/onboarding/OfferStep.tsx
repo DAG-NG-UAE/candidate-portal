@@ -11,7 +11,6 @@ export default function OfferStep() {
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
@@ -133,7 +132,7 @@ export default function OfferStep() {
           </Box> */}
 
           <Box sx={{ mt: 4 }}>
-            {(offerDetails?.clauses || []).map((clause) => (
+            {(offerDetails?.clauses || []).map((clause:any) => (
               <Box key={clause.clause_id} sx={{ mb: 3 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: '#1E293B' }}>
                   {clause.title}
@@ -150,6 +149,7 @@ export default function OfferStep() {
           </Typography>
         </Box>
       </Card>
+      
     </Box>
   );
 }

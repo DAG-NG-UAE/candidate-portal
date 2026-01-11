@@ -104,4 +104,17 @@ export interface JoiningFormData {
   employment_history: EmploymentHistory[];
   educational_history: EducationalHistory[];
   trainings_certifications: TrainingCertification[];
+  documents?: Record<
+    string,
+    | {
+        url: string;
+        status: string;
+        comment: string;
+      }
+    | {
+        url: string;
+        status: string;
+        comment: string;
+      }[]
+  >;
 }

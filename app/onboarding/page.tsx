@@ -7,12 +7,14 @@ import PersonalInfoStep from '../../components/onboarding/PersonalInfoStep';
 import GuarantorStep from '../../components/onboarding/GuarantorStep';
 import DocumentUploadStep from '../../components/onboarding/DocumentUploadStep';
 import FinalReviewStep from '../../components/onboarding/FinalReviewStep';
+import EmailDialog from '../../components/EmailDialog';
 
 import { useDispatch, useSelector } from '@/redux/store';
 import { RootState } from '@reduxjs/toolkit/query';
-import { callSubmitDetails, fetchOfferDetails, clearState as clearOfferState, callRejectOffer, callAcceptOffer, callSaveDocuments } from '@/redux/slices/offer';
+import { callSubmitDetails, fetchOfferDetails, clearState as clearOfferState, callRejectOffer, callAcceptOffer, callSaveDocuments, callGetJoiningDetails } from '@/redux/slices/offer';
 import { clearState as clearCandidateState } from '@/redux/slices/candidate';
 import { useRouter } from 'next/navigation';
+import { RequestRevision } from '@/api/offer';
 
 
 const steps = ['Offer', 'Personal Info', 'Guarantor', 'Documents', 'Final Review'];
@@ -22,7 +24,7 @@ export default function OnboardingPage() {
   const dispatch = useDispatch();
   const router = useRouter();
   const {candidate} = useSelector((state) => state.candidates)
-  const {offerDetails} = useSelector((state) => state.offers)
+  const {offerDetails, joiningDetails} = useSelector((state) => state.offers)
   
   // Document Upload State
   const [passportFile, setPassportFile] = useState<File | null>(null);
@@ -36,6 +38,8 @@ export default function OnboardingPage() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [rejectionSafetyWord, setRejectionSafetyWord] = useState('');
 
+  const [openRevisionDialog, setOpenRevisionDialog] = useState(false);
+
   console.log(candidate)
 
   useEffect(() => { 
@@ -43,6 +47,8 @@ export default function OnboardingPage() {
         // we want to get the offer letter for the candidate 
         fetchOfferDetails()
     }
+    // Also fetch joining details to show existing documents
+    callGetJoiningDetails();
   }, [candidate])
 
 //   console.log(`the offer details are ${JSON.stringify(offerDetails)}`)
@@ -57,7 +63,12 @@ export default function OnboardingPage() {
   };
 
   const handleSaveDocuments = async () => {
-      const formData = new FormData();
+    const formData = new FormData();
+        if (candidate?.candidate_id) {
+          
+            formData.append('candidateId', candidate.candidate_id);
+        }
+      
       if (passportFile) {
           formData.append('passport', passportFile);
       }
@@ -65,10 +76,7 @@ export default function OnboardingPage() {
           formData.append('certificates', file);
       });
       // Add other necessary details if required by backend, e.g. candidate ID
-       if (candidate?.candidate_id) {
-            console.log(`the candidate id is ${candidate.candidate_id}`)
-          formData.append('candidateId', candidate.candidate_id);
-      }
+       
       if(candidate?.offer_id){ 
         console.log(`the offer id is ${candidate.offer_id}`)
         formData.append('offerId', candidate.offer_id);
@@ -98,6 +106,23 @@ export default function OnboardingPage() {
   const handleDeclineClick = () => {
     setRejectionSafetyWord('');
     setOpenRejectModal(true);
+  };
+
+  const handleRevisionRequest = () => { 
+    setOpenRevisionDialog(true);
+  }
+
+  const handleRevisionSubmit = async (data: { message: string, contactEmail: string, contactPhone: string }) => {
+      console.log('Revision Requested:', data);
+      const result = await RequestRevision(data);
+      console.log('Revision Request Result:', result);
+      if(result.success){
+        setOpenRevisionDialog(false);
+        //we want to tell them that the revision request was successful
+        
+      }
+      // TODO: Call backend API to submit revision request
+      setOpenRevisionDialog(false);
   };
 
   const handleCloseRejectModal = () => {
@@ -140,6 +165,7 @@ export default function OnboardingPage() {
                         certificateFiles={certificateFiles}
                         setCertificateFiles={setCertificateFiles}
                         onSave={handleSaveDocuments}
+                        joiningDetails={joiningDetails}
                      />;
           case 4:
               return <FinalReviewStep 
@@ -236,6 +262,21 @@ export default function OnboardingPage() {
 
                 {activeStep === 0 ? (
                     <Box sx={{ display: 'flex', gap: 2 }}>
+                        
+                        <Button 
+                            variant="outlined"
+                            size="large"
+                            color="error"
+                            onClick={handleRevisionRequest}
+                            sx={{ 
+                                minWidth: 120,
+                                borderRadius: '10px',
+                                textTransform: 'none'
+                             }}
+                         >
+                             Request Revision
+                         </Button>
+
                          <Button 
                             variant="outlined"
                             size="large"
@@ -345,6 +386,13 @@ export default function OnboardingPage() {
             </Button>
         </DialogActions>
       </Dialog>
+
+      <EmailDialog 
+        open={openRevisionDialog}
+        onClose={() => setOpenRevisionDialog(false)}
+        candidate={candidate}
+        onSubmit={handleRevisionSubmit}
+      />
 
       
     </Box>

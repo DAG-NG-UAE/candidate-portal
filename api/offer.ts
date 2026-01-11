@@ -104,3 +104,12 @@ export const saveDocuments = async (formData: FormData) => {
     return error;
   }
 };
+
+export const RequestRevision = async (payload: {contactEmail: string, contactPhone: string, message: string}) => {
+    try {
+        const response = await axiosInstance.post(`/offer/revision/request`, {requestRevision: {preferred_email: payload.contactEmail, preferred_contact_number: payload.contactPhone, message: payload.message}});
+        return response.data;
+    } catch (error) {
+        return error;
+    }
+}

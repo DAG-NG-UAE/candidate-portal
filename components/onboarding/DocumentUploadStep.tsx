@@ -46,12 +46,16 @@ const PassportPreview = styled(Box)({
     }
 });
 
+import { JoiningFormData } from '@/interface/joining';
+import { API_BASE_URL } from '@/api/axiosInstance';
+
 interface DocumentUploadStepProps {
     passportFile: File | null;
     setPassportFile: (file: File | null) => void;
     certificateFiles: File[];
     setCertificateFiles: React.Dispatch<React.SetStateAction<File[]>>;
     onSave: () => void;
+    joiningDetails?: JoiningFormData | null;
 }
 
 export default function DocumentUploadStep({
@@ -59,7 +63,8 @@ export default function DocumentUploadStep({
     setPassportFile,
     certificateFiles,
     setCertificateFiles,
-    onSave
+    onSave,
+    joiningDetails
 }: DocumentUploadStepProps) {
     const [passportPreview, setPassportPreview] = React.useState<string | null>(null);
 
@@ -100,6 +105,25 @@ export default function DocumentUploadStep({
 
     const hasUploads = passportFile !== null || certificateFiles.length > 0;
 
+    // Helper to extract documents safely
+    const existingPassport = joiningDetails?.documents?.['passport'] as { url: string; status: string; comment: string } | undefined;
+    const existingCertificates = joiningDetails?.documents?.['certificates'];
+
+    const certList = Array.isArray(existingCertificates) 
+        ? existingCertificates 
+        : existingCertificates 
+            ? [existingCertificates] 
+            : [];
+
+    const getFullUrl = (url: string) => {
+        if (!url) return '';
+        if (url.startsWith('http')) return url;
+        const base = API_BASE_URL?.replace(/\/+$/, '') || '';
+        const path = url.replace(/^\/+/, '');
+
+        return `${base}/${path}`;
+    };
+
     return (
         <Box sx={{ maxWidth: '800px', mx: 'auto' }}>
             <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -133,11 +157,13 @@ export default function DocumentUploadStep({
                     
                     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 4, alignItems: 'center' }}>
                         <PassportPreview sx={{ 
-                            borderColor: passportPreview ? 'primary.main' : '#E2E8F0',
-                            boxShadow: passportPreview ? '0 4px 12px rgba(41, 98, 255, 0.15)' : 'none'
+                            borderColor: passportPreview || existingPassport ? 'primary.main' : '#E2E8F0',
+                            boxShadow: passportPreview || existingPassport ? '0 4px 12px rgba(41, 98, 255, 0.15)' : 'none'
                         }}>
-                            {passportPreview ? (
+                             {passportPreview ? (
                                 <img src={passportPreview} alt="Passport Preview" />
+                            ) : existingPassport ? (
+                                <img src={getFullUrl(existingPassport.url)} alt="Passport Preview" />
                             ) : (
                                 <Box sx={{ textAlign: 'center', p: 1 }}>
                                     <PhotoCameraIcon sx={{ color: '#CBD5E1', fontSize: 40, mb: 1 }} />
@@ -149,13 +175,26 @@ export default function DocumentUploadStep({
                         </PassportPreview>
 
                         <Box sx={{ flex: 1 }}>
+                            {existingPassport && (
+                                <Box sx={{ mb: 2, p: 2, bgcolor: '#F0F9FF', borderRadius: 2, border: '1px solid #BDE0FE' }}>
+                                    <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600 }}>
+                                        Current Passport Status: {existingPassport.status || 'Submitted'}
+                                    </Typography>
+                                     {existingPassport.comment && (
+                                        <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: '#64748B' }}>
+                                            Comment: {existingPassport.comment}
+                                        </Typography>
+                                    )}
+                                </Box>
+                            )}
+
                             <Button
                                 component="label"
                                 variant={passportFile ? "outlined" : "contained"}
                                 startIcon={<CloudUploadIcon />}
                                 sx={{ mb: 2, minWidth: 200 }}
                             >
-                                {passportFile ? 'Change Photo' : 'Upload Passport'}
+                                {passportFile ? 'Change Photo' : (existingPassport ? 'Update Passport' : 'Upload Passport')}
                                 <VisuallyHiddenInput type="file" onChange={handlePassportChange} accept="image/*" />
                             </Button>
                             
@@ -187,6 +226,39 @@ export default function DocumentUploadStep({
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                         Upload all relevant certificates (Degree, HND, Professional Certifications, etc.). You can upload multiple files.
                     </Typography>
+                    
+                    {/* Existing Certificates List */}
+                    {certList.length > 0 && (
+                         <Box sx={{ mb: 3 }}>
+                            <Typography variant="subtitle2" sx={{ mb: 1, color: '#1E293B' }}>
+                                Previously Uploaded ({certList.length})
+                            </Typography>
+                            <List disablePadding>
+                                {certList.map((cert: any, index: number) => (
+                                    <ListItem 
+                                        key={index} 
+                                        sx={{ 
+                                            bgcolor: '#F1F5F9', 
+                                            mb: 1, 
+                                            borderRadius: 2, 
+                                            border: '1px solid #E2E8F0' 
+                                        }}
+                                    >
+                                        <ListItemIcon>
+                                            <CheckCircleIcon sx={{ color: '#10B981' }} />
+                                        </ListItemIcon>
+                                        <ListItemText 
+                                            primary="Certificate" // URL parsing to get name might be needed if url is full path
+                                            secondary={`Status: ${cert.status || 'Submitted'}`}
+                                            primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+                                        />
+                                         <Button size="small" href={getFullUrl(cert.url)} target="_blank" sx={{ mr: 1 }}>View</Button>
+                                         {/* Delete logic for existing files to be implemented */}
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </Box>
+                    )}
 
                     <Box 
                         component="label"
@@ -218,7 +290,7 @@ export default function DocumentUploadStep({
                     {certificateFiles.length > 0 && (
                         <Box sx={{ mt: 4 }}>
                             <Typography variant="subtitle2" sx={{ mb: 2, color: '#1E293B' }}>
-                                Uploaded Documents ({certificateFiles.length})
+                                New Uploads ({certificateFiles.length})
                             </Typography>
                             <List disablePadding>
                                 {certificateFiles.map((file, index) => (
