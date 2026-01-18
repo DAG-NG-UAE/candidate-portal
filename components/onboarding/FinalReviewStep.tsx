@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Box, Typography, Card, Checkbox, FormControlLabel, TextField, Divider, Stack } from '@mui/material';
+import React, { useMemo } from 'react';
+import { Box, Typography, Card, Checkbox, FormControlLabel, TextField, Stack, Alert, AlertTitle } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { useSelector } from '@/redux/store';
 
 interface FinalReviewStepProps {
@@ -14,28 +15,111 @@ interface FinalReviewStepProps {
 
 export default function FinalReviewStep({ acknowledged, setAcknowledged, signature, setSignature }: FinalReviewStepProps) {
     const { candidate } = useSelector((state) => state.candidates);
-    // Removed local state hooks
+    const { joiningDetails, guarantorDetails } = useSelector((state) => state.offers);
+
     const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+    const missingPersonalFields = useMemo(() => {
+        const missing: string[] = [];
+        if (!joiningDetails) {
+            return ['All Personal Information'];
+        }
+
+        const requiredFields = [
+            { key: 'first_name', label: 'First Name' },
+            { key: 'last_name', label: 'Last Name' },
+            { key: 'gender', label: 'Gender' },
+            { key: 'dob', label: 'Date of Birth' },
+            { key: 'place_of_birth', label: 'Place of Birth' },
+            { key: 'nationality', label: 'Nationality' },
+            { key: 'marital_status', label: 'Marital Status' },
+            { key: 'religion', label: 'Religion' },
+            { key: 'blood_group', label: 'Blood Group' },
+            { key: 'permanent_address', label: 'Permanent Address' },
+            { key: 'current_address', label: 'Current Address' },
+            { key: 'mobile_nigeria', label: 'Mobile (Nigeria)' },
+            { key: 'personal_email', label: 'Personal Email' },
+            // Financials
+            { key: 'bank_name', label: 'Bank Name' },
+            { key: 'account_number', label: 'Account Number' },
+            { key: 'account_type', label: 'Account Type' },
+            // Identification
+            { key: 'passport_number', label: 'Passport Number' },
+        ];
+
+        requiredFields.forEach((field) => {
+            if (!joiningDetails[field.key]) {
+                missing.push(field.label);
+            }
+        });
+
+        // Check objects if necessary
+        if (!joiningDetails.next_of_kin?.name) missing.push('Next of Kin Name');
+        if (!joiningDetails.emergency_primary?.name) missing.push('Emergency Contact Name');
+
+        return missing;
+
+    }, [joiningDetails]);
+
+    const missingGuarantorFields = useMemo(() => {
+        const missing: string[] = [];
+        if (!guarantorDetails) {
+            return ['All Guarantor Details'];
+        }
+
+        const requiredFields = [
+            { key: 'guarantor_full_name', label: 'Full Name' },
+            { key: 'email_address', label: 'Email Address' },
+            { key: 'phone_number', label: 'Phone Number' },
+            { key: 'place_of_work_address', label: 'Work Address' },
+            { key: 'house_address', label: 'Home Address' },
+            { key: 'income_range', label: 'Income Range' },
+            { key: 'relationship_with_employee', label: 'Relationship' },
+            { key: 'known_duration', label: 'Known Duration' },
+            { key: 'assessment_character', label: 'Character Assessment' },
+            { key: 'is_honest', label: 'Honesty Assessment' },
+            { key: 'recommend_for_employment', label: 'Recommendation' },
+            { key: 'will_stand_as_guarantor', label: 'Will Stand as Guarantor' },
+        ];
+
+        requiredFields.forEach((field) => {
+             // @ts-ignore
+            if (!guarantorDetails[field.key]) {
+                missing.push(field.label);
+            }
+        });
+
+        return missing;
+    }, [guarantorDetails]);
+
+    const isAllCompleted = missingPersonalFields.length === 0 && missingGuarantorFields.length === 0;
 
     return (
         <Box sx={{ maxWidth: '800px', mx: 'auto' }}>
 
-            {/* Success Banner */}
-            <Box sx={{ 
-                bgcolor: '#ecfdf5', 
-                border: '1px solid #a7f3d0', 
-                borderRadius: 2, 
-                p: 2, 
-                mb: 4, 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1.5 
-            }}>
-                <CheckCircleOutlineIcon sx={{ color: '#059669' }} />
-                <Typography sx={{ color: '#065f46', fontWeight: 500 }}>
-                    All sections completed successfully!
-                </Typography>
-            </Box>
+            {/* Status Banner */}
+            {isAllCompleted ? (
+                <Box sx={{ 
+                    bgcolor: '#ecfdf5', 
+                    border: '1px solid #a7f3d0', 
+                    borderRadius: 2, 
+                    p: 2, 
+                    mb: 4, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1.5 
+                }}>
+                    <CheckCircleOutlineIcon sx={{ color: '#059669' }} />
+                    <Typography sx={{ color: '#065f46', fontWeight: 500 }}>
+                        All sections completed successfully!
+                    </Typography>
+                </Box>
+            ) : (
+                <Alert severity="warning" sx={{ mb: 4, borderRadius: 2 }}>
+                    <AlertTitle>Action Required</AlertTitle>
+                    Some sections are incomplete. Please review the missing fields below.
+                </Alert>
+            )}
 
             {/* Status List */}
             <Stack spacing={2} sx={{ mb: 6 }}>
@@ -43,13 +127,53 @@ export default function FinalReviewStep({ acknowledged, setAcknowledged, signatu
                     <Typography sx={{ color: '#64748B' }}>Offer Letter</Typography>
                     <Typography sx={{ color: '#059669'}}>Accepted</Typography>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1, borderBottom: '1px solid #E2E8F0' }}>
-                    <Typography sx={{ color: '#64748B' }}>Personal Information</Typography>
-                    <Typography sx={{ color: '#059669'}}>Completed</Typography>
+                
+                {/* Personal Information Status */}
+                <Box sx={{ py: 1, borderBottom: '1px solid #E2E8F0' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography sx={{ color: '#64748B' }}>Personal Information</Typography>
+                        {missingPersonalFields.length === 0 ? (
+                            <Typography sx={{ color: '#059669' }}>Completed</Typography>
+                        ) : (
+                            <Typography sx={{ color: '#DC2626', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <ErrorOutlineIcon fontSize="small" /> Incomplete
+                            </Typography>
+                        )}
+                    </Box>
+                    {missingPersonalFields.length > 0 && (
+                        <Box sx={{ mt: 1, p: 1.5, bgcolor: '#FEF2F2', borderRadius: 1 }}>
+                            <Typography variant="caption" sx={{ color: '#DC2626', fontWeight: 600, display: 'block', mb: 0.5 }}>
+                                Missing Fields:
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#991B1B', lineHeight: 1.4 }}>
+                                {missingPersonalFields.join(', ')}
+                            </Typography>
+                        </Box>
+                    )}
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1, borderBottom: '1px solid #E2E8F0' }}>
-                    <Typography sx={{ color: '#64748B' }}>Guarantor Details</Typography>
-                    <Typography sx={{ color: '#059669'}}>Completed</Typography>
+
+                {/* Guarantor Details Status */}
+                <Box sx={{ py: 1, borderBottom: '1px solid #E2E8F0' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography sx={{ color: '#64748B' }}>Guarantor Details</Typography>
+                        {missingGuarantorFields.length === 0 ? (
+                            <Typography sx={{ color: '#059669' }}>Completed</Typography>
+                        ) : (
+                            <Typography sx={{ color: '#DC2626', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <ErrorOutlineIcon fontSize="small" /> Incomplete
+                            </Typography>
+                        )}
+                    </Box>
+                    {missingGuarantorFields.length > 0 && (
+                        <Box sx={{ mt: 1, p: 1.5, bgcolor: '#FEF2F2', borderRadius: 1 }}>
+                            <Typography variant="caption" sx={{ color: '#DC2626', fontWeight: 600, display: 'block', mb: 0.5 }}>
+                                Missing Fields:
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: '#991B1B', lineHeight: 1.4 }}>
+                                {missingGuarantorFields.join(', ')}
+                            </Typography>
+                        </Box>
+                    )}
                 </Box>
             </Stack>
 

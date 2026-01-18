@@ -314,7 +314,10 @@ export default function OnboardingPage() {
                         onClick={activeStep === steps.length - 1 ? handleFinalSubmit : handleNext}
                         disabled={
                             (activeStep === steps.length - 1 && (!acknowledged || !signature)) ||
-                            (activeStep === 3 && !passportFile) // Ensure passport is uploaded in step 3
+                            (activeStep === 3 && !(
+                                (passportFile || joiningDetails?.documents?.passport) && 
+                                (certificateFiles.length > 0 || (joiningDetails?.documents?.certificates && joiningDetails.documents.certificates.length > 0))
+                            )) 
                             || (activeStep === 4 && offerDetails?.status == 'revision_requested')
                         }
                         sx={{ 

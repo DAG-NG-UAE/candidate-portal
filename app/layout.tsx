@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import ThemeRegistry from "../components/ThemeRegistry";
 import "./globals.css";
 import ReduxProvider from "@/redux/provider";
+import NotistackProvider from "@/components/NotistackProvider";
 
 export const metadata: Metadata = {
   title: "Candidate Onboarding",
@@ -18,7 +19,9 @@ export default function RootLayout({
       <body>
         <ReduxProvider>
           <ThemeRegistry>
-            {children}
+            <NotistackProvider>
+              {children}
+            </NotistackProvider>
           </ThemeRegistry>
         </ReduxProvider>
       </body>

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { 
     Box, Typography, Card, TextField, MenuItem, 
-    Button, Divider, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel, Checkbox 
+    Button, Divider, Radio, RadioGroup, FormControlLabel, FormControl, FormLabel, Checkbox, CircularProgress 
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { GuarantorFormData } from '@/interface/guarantor';
@@ -52,7 +52,7 @@ const initialData: GuarantorFormData = {
 
 export default function GuarantorStep() {
     const [formData, setFormData] = useState<GuarantorFormData>(initialData);
-    const { guarantorDetails } = useSelector((state) => state.offers);
+    const { guarantorDetails, loading } = useSelector((state) => state.offers);
     const { candidate } = useSelector((state) => state.candidates);
 
     useEffect(() => {
@@ -271,7 +271,7 @@ export default function GuarantorStep() {
                             variant="contained" 
                             size="large"
                             onClick={handleSubmit} 
-                            disabled={!formData.declaration_agreed}
+                            disabled={!formData.declaration_agreed || loading}
                             sx={{ 
                                 minWidth: 200, 
                                 py: 1.5, 
@@ -282,7 +282,7 @@ export default function GuarantorStep() {
                                 '&:hover': { bgcolor: '#1E40AF' }
                             }}
                         >
-                            Submit Guarantor Form
+                            {loading ? <CircularProgress size={24} color="inherit" /> : 'Submit Guarantor Form'}
                         </Button>
                     </Box>
 
