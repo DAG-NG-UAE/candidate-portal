@@ -54,7 +54,7 @@ export const offerSlice = createSlice({
     },
     setGuarantorDetails(
       state,
-      action: PayloadAction<Partial<GuarantorFormData>>
+      action: PayloadAction<Partial<GuarantorFormData>>,
     ) {
       state.guarantorDetails = action.payload;
     },
@@ -197,21 +197,15 @@ export const callSaveDocuments = async (formData: FormData) => {
     dispatch(startLoading());
     const result = await saveDocuments(formData);
     if (result.success) {
-      enqueueSnackbar("Documents uploaded successfully", {
-        variant: "success",
-      });
+      
       return true;
     } else {
-      enqueueSnackbar(result.message || "Failed to upload documents", {
-        variant: "error",
-      });
+      
       return false;
     }
   } catch (error: any) {
     dispatch(hasError(error?.response?.data || error));
-    enqueueSnackbar(error?.message || "Error uploading documents", {
-      variant: "error",
-    });
+    
     return false;
   } finally {
     dispatch(stopLoading());
@@ -227,21 +221,13 @@ export const deleteDocument = async (payload: {
     dispatch(startLoading());
     const result = await deleteUploadedDocument(payload);
     if (result.success) {
-      enqueueSnackbar("Document deleted successfully", {
-        variant: "success",
-      });
       return true;
     } else {
-      enqueueSnackbar(result.message || "Failed to delete document", {
-        variant: "error",
-      });
       return false;
     }
   } catch (error: any) {
+    console.log(error);
     dispatch(hasError(error?.response?.data || error));
-    enqueueSnackbar(error?.message || "Error deleting document", {
-      variant: "error",
-    });
     return false;
   } finally {
     dispatch(stopLoading());

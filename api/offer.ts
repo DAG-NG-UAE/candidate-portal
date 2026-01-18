@@ -114,7 +114,7 @@ export const deleteUploadedDocument = async (payload: {
     const response = await axiosInstance.delete(
       `/application/document/delete?candidateId=${payload.candidateId}&offerId=${payload.offerId}&documentId=${payload.documentId}`,
     );
-    return response.data;
+    return response.data.data;
   } catch (error) {
     return error;
   }

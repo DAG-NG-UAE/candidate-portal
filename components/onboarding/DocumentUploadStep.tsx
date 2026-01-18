@@ -52,7 +52,7 @@ import { API_BASE_URL } from '@/api/axiosInstance';
 import { useDispatch, useSelector } from '@/redux/store';
 import { callGetJoiningDetails, callSaveDocuments, deleteDocument } from '@/redux/slices/offer';
 import { deleteUploadedDocument } from '@/api/offer';
-import { enqueueSnackbar } from 'notistack';
+import { useSnackbar } from 'notistack';
 
 import { RootState } from '@reduxjs/toolkit/query';
 
@@ -78,9 +78,10 @@ export default function DocumentUploadStep({
     offerId
 }: DocumentUploadStepProps) {
    
+    const dispatch = useDispatch();
+    const { enqueueSnackbar } = useSnackbar();
     const [passportPreview, setPassportPreview] = React.useState<string | null>(null);
-    const [deletedDocIds, setDeletedDocIds] = React.useState<string[]>([]);
-    const [isSaving, setIsSaving] = React.useState(false);
+    const [deletingId, setDeletingId] = React.useState<string | null>(null);
     const {loading} = useSelector((state) => state.offers);
 
     useEffect(() => {
@@ -119,49 +120,37 @@ export default function DocumentUploadStep({
     };
 
     const handleDeleteDocument = async(docId: string) => {
-        //make the request to the backend to delete the document 
-        if(candidateId && offerId){
-            await deleteDocument({candidateId,offerId,documentId:docId})
-            console.log('document deleted')
-            setDeletedDocIds((prev) => [...prev, docId]);
+        if(!candidateId || !offerId) return;
+        
+        setDeletingId(docId);
+        const success = await deleteDocument({candidateId, offerId, documentId: docId});
+        
+        if (success) {
+            enqueueSnackbar("Document deleted successfully", { variant: 'success' });
+            // Refresh details to reflect deletion
+           await callGetJoiningDetails();
+        } else {
+            enqueueSnackbar("Failed to delete document", { variant: 'error' });
         }
+        setDeletingId(null);
     };
 
     const handleSaveRequest = async () => {
-        setIsSaving(true);
-        try {
-            
-
-            // 2. Process uploads
-            await onSave();
-
-            // 3. Refresh data
-            await callGetJoiningDetails();
-            setDeletedDocIds([]);
-            
-        } catch (error) {
-            console.error("Error saving documents:", error);
-            enqueueSnackbar("An error occurred while saving documents.", { variant: 'error' });
-        } finally {
-            setIsSaving(false);
-        }
+        // Just process new uploads
+        await onSave();
     };
 
-    const hasUploads = passportFile !== null || certificateFiles.length > 0 || deletedDocIds.length > 0;
+    const hasUploads = passportFile !== null || certificateFiles.length > 0;
 
     // Helper to extract documents safely
-    const rawPassport = joiningDetails?.documents?.['passport'] as { _id?: string; url: string; status: string; comment: string } | undefined;
-    const existingPassport = (rawPassport && rawPassport._id && deletedDocIds.includes(rawPassport._id)) ? undefined : rawPassport;
-
+    const existingPassport = joiningDetails?.documents?.['passport'] as { _id?: string; url: string; status: string; comment: string } | undefined;
     const existingCertificates = joiningDetails?.documents?.['certificates'];
 
-    const rawCertList = Array.isArray(existingCertificates) 
+    const certList = Array.isArray(existingCertificates) 
         ? existingCertificates 
         : existingCertificates 
             ? [existingCertificates] 
             : [];
-    
-    const certList = rawCertList.filter((c: any) => !c._id || !deletedDocIds.includes(c._id));
 
     const getFullUrl = (url: string) => {
         if (!url) return '';
@@ -186,10 +175,10 @@ export default function DocumentUploadStep({
                  <Button 
                     variant="contained" 
                     onClick={handleSaveRequest}
-                    disabled={!hasUploads || isSaving}
+                    disabled={!hasUploads || loading}
                     sx={{ borderRadius: '8px' }}
                 >
-                    {isSaving ? 'Saving...' : 'Save Documents'}
+                    {loading ? 'Saving...' : 'Save Documents'}
                 </Button>
             </Box>
 
@@ -237,14 +226,20 @@ export default function DocumentUploadStep({
                                             )}
                                         </Box>
                                         {existingPassport._id && (
-                                            <IconButton 
-                                                size="small" 
-                                                onClick={() => handleDeleteDocument(existingPassport._id!)}
-                                                color="error"
-                                                disabled={loading}
-                                            >
-                                                <DeleteIcon fontSize="small" />
-                                            </IconButton>
+                                            <Box>
+                                                {deletingId === existingPassport._id ? (
+                                                    <CircularProgress size={20} color="primary" sx={{ m: 1 }} />
+                                                ) : (
+                                                    <IconButton 
+                                                        size="small" 
+                                                        onClick={() => handleDeleteDocument(existingPassport._id!)}
+                                                        color="error"
+                                                        disabled={loading || !!deletingId}
+                                                    >
+                                                        <DeleteIcon fontSize="small" />
+                                                    </IconButton>
+                                                )}
+                                            </Box>
                                         )}
                                     </Box>
                                 </Box>
@@ -303,33 +298,43 @@ export default function DocumentUploadStep({
                                             bgcolor: '#F1F5F9', 
                                             mb: 1, 
                                             borderRadius: 2, 
-                                            border: '1px solid #E2E8F0' 
+                                            border: '1px solid #E2E8F0',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center'
                                         }}
                                     >
-                                        <ListItemIcon>
-                                            <CheckCircleIcon sx={{ color: '#10B981' }} />
-                                        </ListItemIcon>
-                                        <ListItemText 
-                                            primary={cert.fileName || "Certificate"} 
-                                            secondary={`Status: ${cert.status || 'Submitted'}`}
-                                            primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
-                                        />
-                                         <Button size="small" href={getFullUrl(cert.url)} target="_blank" sx={{ mr: 1 }}>View</Button>
-                                         
-                                         {cert._id && (
-                                             <IconButton 
-                                                edge="end" 
-                                                aria-label="delete" 
-                                                onClick={() => handleDeleteDocument(cert._id)}
-                                                disabled={loading}
-                                                color="error"
-                                             >
-                                                <DeleteIcon color="action" />
-                                             </IconButton>
-                                         )}
-                                         {loading && (
-                                             <CircularProgress size={20} color="primary" />
-                                         )}
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <ListItemIcon>
+                                                <CheckCircleIcon sx={{ color: '#10B981' }} />
+                                            </ListItemIcon>
+                                            <ListItemText 
+                                                primary={cert.fileName || "Certificate"} 
+                                                secondary={`Status: ${cert.status || 'Submitted'}`}
+                                                primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+                                            />
+                                        </Box>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <Button size="small" href={getFullUrl(cert.url)} target="_blank" sx={{ mr: 1 }}>View</Button>
+                                            
+                                            {cert._id && (
+                                                <Box>
+                                                    {deletingId === cert._id ? (
+                                                        <CircularProgress size={20} color="primary" sx={{ m: 1 }} />
+                                                    ) : (
+                                                        <IconButton 
+                                                            edge="end" 
+                                                            aria-label="delete" 
+                                                            onClick={() => handleDeleteDocument(cert._id)}
+                                                            disabled={loading || !!deletingId}
+                                                            color="error"
+                                                        >
+                                                            <DeleteIcon color="action" />
+                                                        </IconButton>
+                                                    )}
+                                                </Box>
+                                            )}
+                                        </Box>
                                     </ListItem>
                                 ))}
                             </List>
