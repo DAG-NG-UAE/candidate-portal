@@ -49,7 +49,7 @@ export const saveGuarantorDetails = async (payload: any) => {
   try {
     const response = await axiosInstance.patch(
       `/offer/guarantor/save`,
-      payload
+      payload,
     );
     return response.data;
   } catch (error) {
@@ -97,7 +97,7 @@ export const saveDocuments = async (formData: FormData) => {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }
+      },
     );
     return response.data;
   } catch (error) {
@@ -105,11 +105,36 @@ export const saveDocuments = async (formData: FormData) => {
   }
 };
 
-export const RequestRevision = async (payload: {contactEmail: string, contactPhone: string, message: string}) => {
-    try {
-        const response = await axiosInstance.post(`/offer/revision/request`, {requestRevision: {preferred_email: payload.contactEmail, preferred_contact_number: payload.contactPhone, message: payload.message}});
-        return response.data;
-    } catch (error) {
-        return error;
-    }
-}
+export const deleteUploadedDocument = async (payload: {
+  candidateId: string;
+  offerId: string;
+  documentId: string;
+}) => {
+  try {
+    const response = await axiosInstance.delete(
+      `/application/document/delete?candidateId=${payload.candidateId}&offerId=${payload.offerId}&documentId=${payload.documentId}`,
+    );
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};
+
+export const RequestRevision = async (payload: {
+  contactEmail: string;
+  contactPhone: string;
+  message: string;
+}) => {
+  try {
+    const response = await axiosInstance.post(`/offer/revision/request`, {
+      requestRevision: {
+        preferred_email: payload.contactEmail,
+        preferred_contact_number: payload.contactPhone,
+        message: payload.message,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};

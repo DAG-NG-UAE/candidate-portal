@@ -36,4 +36,9 @@ export interface OfferDetails {
   // Status indicators for the UI
   accepted_at: string | null;
   first_viewed_at: string | null;
+  status: string;
+
+  
+  user_name: string; 
+  signature_path: string;
 }

@@ -11,6 +11,7 @@ import {
   rejectOffer,
   acceptOffer,
   saveDocuments,
+  deleteUploadedDocument,
 } from "@/api/offer";
 import { GuarantorFormData } from "@/interface/guarantor";
 import { enqueueSnackbar } from "notistack";
@@ -217,4 +218,33 @@ export const callSaveDocuments = async (formData: FormData) => {
   }
 };
 
+export const deleteDocument = async (payload: {
+  candidateId: string;
+  offerId: string;
+  documentId: string;
+}) => {
+  try {
+    dispatch(startLoading());
+    const result = await deleteUploadedDocument(payload);
+    if (result.success) {
+      enqueueSnackbar("Document deleted successfully", {
+        variant: "success",
+      });
+      return true;
+    } else {
+      enqueueSnackbar(result.message || "Failed to delete document", {
+        variant: "error",
+      });
+      return false;
+    }
+  } catch (error: any) {
+    dispatch(hasError(error?.response?.data || error));
+    enqueueSnackbar(error?.message || "Error deleting document", {
+      variant: "error",
+    });
+    return false;
+  } finally {
+    dispatch(stopLoading());
+  }
+};
 export default offerSlice.reducer;

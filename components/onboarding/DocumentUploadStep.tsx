@@ -4,7 +4,8 @@ import React, { useEffect } from 'react';
 import { 
     Box, Typography, Card, Button, IconButton, 
     List, ListItem, ListItemIcon, ListItemText, ListItemSecondaryAction,
-    Divider
+    Divider,
+    CircularProgress
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -48,6 +49,12 @@ const PassportPreview = styled(Box)({
 
 import { JoiningFormData } from '@/interface/joining';
 import { API_BASE_URL } from '@/api/axiosInstance';
+import { useDispatch, useSelector } from '@/redux/store';
+import { callGetJoiningDetails, callSaveDocuments, deleteDocument } from '@/redux/slices/offer';
+import { deleteUploadedDocument } from '@/api/offer';
+import { enqueueSnackbar } from 'notistack';
+
+import { RootState } from '@reduxjs/toolkit/query';
 
 interface DocumentUploadStepProps {
     passportFile: File | null;
@@ -56,6 +63,8 @@ interface DocumentUploadStepProps {
     setCertificateFiles: React.Dispatch<React.SetStateAction<File[]>>;
     onSave: () => void;
     joiningDetails?: JoiningFormData | null;
+    candidateId?: string;
+    offerId?: string;
 }
 
 export default function DocumentUploadStep({
@@ -64,9 +73,15 @@ export default function DocumentUploadStep({
     certificateFiles,
     setCertificateFiles,
     onSave,
-    joiningDetails
+    joiningDetails,
+    candidateId,
+    offerId
 }: DocumentUploadStepProps) {
+   
     const [passportPreview, setPassportPreview] = React.useState<string | null>(null);
+    const [deletedDocIds, setDeletedDocIds] = React.useState<string[]>([]);
+    const [isSaving, setIsSaving] = React.useState(false);
+    const {loading} = useSelector((state) => state.offers);
 
     useEffect(() => {
         if (passportFile) {
@@ -103,17 +118,50 @@ export default function DocumentUploadStep({
         setPassportFile(null);
     };
 
-    const hasUploads = passportFile !== null || certificateFiles.length > 0;
+    const handleDeleteDocument = async(docId: string) => {
+        //make the request to the backend to delete the document 
+        if(candidateId && offerId){
+            await deleteDocument({candidateId,offerId,documentId:docId})
+            console.log('document deleted')
+            setDeletedDocIds((prev) => [...prev, docId]);
+        }
+    };
+
+    const handleSaveRequest = async () => {
+        setIsSaving(true);
+        try {
+            
+
+            // 2. Process uploads
+            await onSave();
+
+            // 3. Refresh data
+            await callGetJoiningDetails();
+            setDeletedDocIds([]);
+            
+        } catch (error) {
+            console.error("Error saving documents:", error);
+            enqueueSnackbar("An error occurred while saving documents.", { variant: 'error' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const hasUploads = passportFile !== null || certificateFiles.length > 0 || deletedDocIds.length > 0;
 
     // Helper to extract documents safely
-    const existingPassport = joiningDetails?.documents?.['passport'] as { url: string; status: string; comment: string } | undefined;
+    const rawPassport = joiningDetails?.documents?.['passport'] as { _id?: string; url: string; status: string; comment: string } | undefined;
+    const existingPassport = (rawPassport && rawPassport._id && deletedDocIds.includes(rawPassport._id)) ? undefined : rawPassport;
+
     const existingCertificates = joiningDetails?.documents?.['certificates'];
 
-    const certList = Array.isArray(existingCertificates) 
+    const rawCertList = Array.isArray(existingCertificates) 
         ? existingCertificates 
         : existingCertificates 
             ? [existingCertificates] 
             : [];
+    
+    const certList = rawCertList.filter((c: any) => !c._id || !deletedDocIds.includes(c._id));
 
     const getFullUrl = (url: string) => {
         if (!url) return '';
@@ -137,11 +185,11 @@ export default function DocumentUploadStep({
                 </Box>
                  <Button 
                     variant="contained" 
-                    onClick={onSave}
-                    disabled={!hasUploads}
+                    onClick={handleSaveRequest}
+                    disabled={!hasUploads || isSaving}
                     sx={{ borderRadius: '8px' }}
                 >
-                    Save Documents
+                    {isSaving ? 'Saving...' : 'Save Documents'}
                 </Button>
             </Box>
 
@@ -177,14 +225,28 @@ export default function DocumentUploadStep({
                         <Box sx={{ flex: 1 }}>
                             {existingPassport && (
                                 <Box sx={{ mb: 2, p: 2, bgcolor: '#F0F9FF', borderRadius: 2, border: '1px solid #BDE0FE' }}>
-                                    <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600 }}>
-                                        Current Passport Status: {existingPassport.status || 'Submitted'}
-                                    </Typography>
-                                     {existingPassport.comment && (
-                                        <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: '#64748B' }}>
-                                            Comment: {existingPassport.comment}
-                                        </Typography>
-                                    )}
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                        <Box>
+                                            <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600 }}>
+                                                Current Passport Status: {existingPassport.status || 'Submitted'}
+                                            </Typography>
+                                             {existingPassport.comment && (
+                                                <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: '#64748B' }}>
+                                                    Comment: {existingPassport.comment}
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                        {existingPassport._id && (
+                                            <IconButton 
+                                                size="small" 
+                                                onClick={() => handleDeleteDocument(existingPassport._id!)}
+                                                color="error"
+                                                disabled={loading}
+                                            >
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        )}
+                                    </Box>
                                 </Box>
                             )}
 
@@ -248,12 +310,26 @@ export default function DocumentUploadStep({
                                             <CheckCircleIcon sx={{ color: '#10B981' }} />
                                         </ListItemIcon>
                                         <ListItemText 
-                                            primary="Certificate" // URL parsing to get name might be needed if url is full path
+                                            primary={cert.fileName || "Certificate"} 
                                             secondary={`Status: ${cert.status || 'Submitted'}`}
                                             primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
                                         />
                                          <Button size="small" href={getFullUrl(cert.url)} target="_blank" sx={{ mr: 1 }}>View</Button>
-                                         {/* Delete logic for existing files to be implemented */}
+                                         
+                                         {cert._id && (
+                                             <IconButton 
+                                                edge="end" 
+                                                aria-label="delete" 
+                                                onClick={() => handleDeleteDocument(cert._id)}
+                                                disabled={loading}
+                                                color="error"
+                                             >
+                                                <DeleteIcon color="action" />
+                                             </IconButton>
+                                         )}
+                                         {loading && (
+                                             <CircularProgress size={20} color="primary" />
+                                         )}
                                     </ListItem>
                                 ))}
                             </List>
@@ -327,6 +403,4 @@ export default function DocumentUploadStep({
     );
 }
 
-// Remove the import from the bottom if it was part of the original write...
-// The previous write concluded with `import { Divider } from '@mui/material';` which was weird. 
-// I will ensure this replacement is clean.
+

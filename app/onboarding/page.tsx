@@ -159,13 +159,15 @@ export default function OnboardingPage() {
           case 2:
               return <GuarantorStep />;
           case 3:
-              return <DocumentUploadStep 
+                      return <DocumentUploadStep 
                         passportFile={passportFile}
                         setPassportFile={setPassportFile}
                         certificateFiles={certificateFiles}
                         setCertificateFiles={setCertificateFiles}
                         onSave={handleSaveDocuments}
                         joiningDetails={joiningDetails}
+                        candidateId={candidate?.candidate_id}
+                        offerId={candidate?.offer_id}
                      />;
           case 4:
               return <FinalReviewStep 
@@ -294,6 +296,7 @@ export default function OnboardingPage() {
                             variant="contained"
                             size="large"
                             onClick={handleNext}
+                            disabled={offerDetails?.status == 'revision_requested'}
                             sx={{ 
                                 minWidth: 160,
                                 borderRadius: '10px',
@@ -301,7 +304,7 @@ export default function OnboardingPage() {
                                 boxShadow: 'none'
                             }}
                         >
-                            Accept & Continue
+                            {offerDetails?.status == 'revision_requested' ? 'Continuation Locked (Revision Pending)' : 'Accept & Continue'}
                         </Button>
                     </Box>
                 ) : (
@@ -312,6 +315,7 @@ export default function OnboardingPage() {
                         disabled={
                             (activeStep === steps.length - 1 && (!acknowledged || !signature)) ||
                             (activeStep === 3 && !passportFile) // Ensure passport is uploaded in step 3
+                            || (activeStep === 4 && offerDetails?.status == 'revision_requested')
                         }
                         sx={{ 
                             minWidth: 160,
@@ -325,7 +329,7 @@ export default function OnboardingPage() {
                             }
                         }}
                     >
-                        {activeStep === steps.length - 1 ? 'Finalize and Submit' : 'Continue'}
+                        {activeStep === steps.length - 1 ? offerDetails?.status == 'revision_requested' ? 'Submission Locked (Revision Pending)' : 'Finalize and Submit' : 'Continue'}
                     </Button>
                 )}
             </Box>

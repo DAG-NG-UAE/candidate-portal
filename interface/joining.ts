@@ -107,14 +107,18 @@ export interface JoiningFormData {
   documents?: Record<
     string,
     | {
+        _id?: string;
         url: string;
         status: string;
         comment: string;
+        fileName?: string;
       }
     | {
+        _id?: string;
         url: string;
         status: string;
         comment: string;
+        fileName?: string;
       }[]
   >;
 }
