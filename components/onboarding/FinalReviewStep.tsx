@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Box, Typography, Card, Checkbox, FormControlLabel, TextField, Stack, Alert, AlertTitle } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { useSelector } from '@/redux/store';
+import { callGetGuarantorDetails, callGetJoiningDetails } from '@/redux/slices/offer';
 
 interface FinalReviewStepProps {
     acknowledged: boolean;
@@ -16,6 +17,19 @@ interface FinalReviewStepProps {
 export default function FinalReviewStep({ acknowledged, setAcknowledged, signature, setSignature }: FinalReviewStepProps) {
     const { candidate } = useSelector((state) => state.candidates);
     const { joiningDetails, guarantorDetails } = useSelector((state) => state.offers);
+
+
+
+    //on landing here we want to call the joining details and the guarantor details from the api
+    useEffect(() => {
+        if (candidate) {
+            callGetJoiningDetails();
+            callGetGuarantorDetails();
+        }
+    }, [candidate]);
+
+    console.log(`candidate joinin details = ${JSON.stringify(joiningDetails)}`)
+    console.log(`guarantor details = ${JSON.stringify(guarantorDetails)}`)
 
     const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 

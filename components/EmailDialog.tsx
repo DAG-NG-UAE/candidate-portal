@@ -13,6 +13,7 @@ import {
     InputAdornment
 } from '@mui/material';
 import { CandidateDetails } from '../interface/candidate';
+import { fetchOfferDetails } from '@/redux/slices/offer';
 
 interface EmailDialogProps {
     open: boolean;
@@ -34,12 +35,13 @@ const EmailDialog: React.FC<EmailDialogProps> = ({ open, onClose, candidate, onS
         }
     }, [open, candidate]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async() => {
         onSubmit({
             message,
             contactEmail,
             contactPhone
         });
+        await fetchOfferDetails()
     };
 
     return (

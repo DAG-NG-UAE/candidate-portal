@@ -8,6 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import Confetti from 'react-confetti';
 import { useSelector } from '@/redux/store';
 import { verifyCandidateToken } from '@/redux/slices/candidate';
+import PreOfferDocuments from '@/components/pre-offer/PreOfferDocuments';
 
 function WelcomeContent() {
   const searchParams = useSearchParams();
@@ -58,8 +59,12 @@ function WelcomeContent() {
     "Passport-size photograph",
     "Guarantor information"
   ];
-  
+
   const isButtonEnabled = !!candidate && !loading;
+
+  if (candidate && candidate.purpose !== 'offer') {
+    return <PreOfferDocuments candidate={candidate} />;
+  }
 
   return (
     <Box 

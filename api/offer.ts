@@ -105,6 +105,23 @@ export const saveDocuments = async (formData: FormData) => {
   }
 };
 
+export const savePreOfferDocument = async (formData: FormData) => {
+  try {
+    const response = await axiosInstance.post(
+      `/application/pre-offer/document/save`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    );
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};
+
 export const deleteUploadedDocument = async (payload: {
   candidateId: string;
   offerId: string;
@@ -133,6 +150,17 @@ export const RequestRevision = async (payload: {
         message: payload.message,
       },
     });
+    return response.data;
+  } catch (error) {
+    return error;
+  }
+};
+
+export const getPreOfferDocuments = async (candidateId: string) => {
+  try {
+    const response = await axiosInstance.get(
+      `/offer/pre/docs?candidateId=${candidateId}`,
+    );
     return response.data;
   } catch (error) {
     return error;
