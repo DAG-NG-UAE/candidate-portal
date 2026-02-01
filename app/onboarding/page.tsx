@@ -14,7 +14,7 @@ import { RootState } from '@reduxjs/toolkit/query';
 import { callSubmitDetails, fetchOfferDetails, clearState as clearOfferState, callRejectOffer, callAcceptOffer, callSaveDocuments, callGetJoiningDetails } from '@/redux/slices/offer';
 import { clearState as clearCandidateState } from '@/redux/slices/candidate';
 import { useRouter } from 'next/navigation';
-import { RequestRevision } from '@/api/offer';
+// import { RequestRevision } from '@/api/offer';
 
 
 const steps = ['Offer', 'Personal Info', 'Guarantor', 'Documents', 'Final Review'];
@@ -29,6 +29,7 @@ export default function OnboardingPage() {
   // Document Upload State
   const [passportFile, setPassportFile] = useState<File | null>(null);
   const [certificateFiles, setCertificateFiles] = useState<File[]>([]);
+  const [proofFiles, setProofFiles] = useState<File[]>([]);
 
   // Final Review State
   const [acknowledged, setAcknowledged] = useState(false);
@@ -75,6 +76,9 @@ export default function OnboardingPage() {
       certificateFiles.forEach((file) => {
           formData.append('certificates', file);
       });
+      proofFiles.forEach((file) => {
+          formData.append('proof', file);
+      });
       // Add other necessary details if required by backend, e.g. candidate ID
        
       if(candidate?.offer_id){ 
@@ -112,18 +116,18 @@ export default function OnboardingPage() {
     setOpenRevisionDialog(true);
   }
 
-  const handleRevisionSubmit = async (data: { message: string, contactEmail: string, contactPhone: string }) => {
-      console.log('Revision Requested:', data);
-      const result = await RequestRevision(data);
-      console.log('Revision Request Result:', result);
-      if(result.success){
-        setOpenRevisionDialog(false);
-        //we want to tell them that the revision request was successful
+//   const handleRevisionSubmit = async (data: { message: string, contactEmail: string, contactPhone: string }) => {
+//       console.log('Revision Requested:', data);
+//       const result = await RequestRevision(data);
+//       console.log('Revision Request Result:', result);
+//       if(result.success){
+//         setOpenRevisionDialog(false);
+//         //we want to tell them that the revision request was successful
         
-      }
-      // TODO: Call backend API to submit revision request
-      setOpenRevisionDialog(false);
-  };
+//       }
+//       // TODO: Call backend API to submit revision request
+//       setOpenRevisionDialog(false);
+//   };
 
   const handleCloseRejectModal = () => {
     setOpenRejectModal(false);
@@ -164,6 +168,8 @@ export default function OnboardingPage() {
                         setPassportFile={setPassportFile}
                         certificateFiles={certificateFiles}
                         setCertificateFiles={setCertificateFiles}
+                        proofFiles={proofFiles}
+                        setProofFiles={setProofFiles}
                         onSave={handleSaveDocuments}
                         joiningDetails={joiningDetails}
                         candidateId={candidate?.candidate_id}
@@ -265,7 +271,7 @@ export default function OnboardingPage() {
                 {activeStep === 0 ? (
                     <Box sx={{ display: 'flex', gap: 2 }}>
                         
-                        <Button 
+                        {/* <Button 
                             variant="outlined"
                             size="large"
                             color="error"
@@ -277,7 +283,7 @@ export default function OnboardingPage() {
                              }}
                          >
                              Request Revision
-                         </Button>
+                         </Button> */}
 
                          <Button 
                             variant="outlined"
@@ -312,11 +318,12 @@ export default function OnboardingPage() {
                         variant="contained"
                         size="large"
                         onClick={activeStep === steps.length - 1 ? handleFinalSubmit : handleNext}
-                        disabled={
+                         disabled={
                             (activeStep === steps.length - 1 && (!acknowledged || !signature)) ||
                             (activeStep === 3 && !(
                                 (passportFile || joiningDetails?.documents?.passport) && 
-                                (certificateFiles.length > 0 || (joiningDetails?.documents?.certificates && joiningDetails.documents.certificates.length > 0))
+                                (certificateFiles.length > 0 || (joiningDetails?.documents?.certificates && joiningDetails.documents.certificates.length > 0)) &&
+                                (proofFiles.length > 0 || (joiningDetails?.documents?.proof && joiningDetails.documents.proof.length > 0))
                             )) 
                             || (activeStep === 4 && offerDetails?.status == 'revision_requested')
                         }
@@ -394,12 +401,12 @@ export default function OnboardingPage() {
         </DialogActions>
       </Dialog>
 
-      <EmailDialog 
+      {/* <EmailDialog 
         open={openRevisionDialog}
         onClose={() => setOpenRevisionDialog(false)}
         candidate={candidate}
         onSubmit={handleRevisionSubmit}
-      />
+      /> */}
 
       
     </Box>

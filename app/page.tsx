@@ -175,7 +175,7 @@ function WelcomeContent() {
 
           <Button 
             component={isButtonEnabled ? Link : 'button'}
-            href={isButtonEnabled ? "/onboarding" : undefined}
+            href={candidate?.finalized_date == null ?  "/onboarding" : "/dashboard"}
             disabled={!isButtonEnabled}
             variant="contained" 
             fullWidth 

@@ -61,6 +61,8 @@ interface DocumentUploadStepProps {
     setPassportFile: (file: File | null) => void;
     certificateFiles: File[];
     setCertificateFiles: React.Dispatch<React.SetStateAction<File[]>>;
+    proofFiles: File[];
+    setProofFiles: React.Dispatch<React.SetStateAction<File[]>>;
     onSave: () => void;
     joiningDetails?: JoiningFormData | null;
     candidateId?: string;
@@ -72,6 +74,8 @@ export default function DocumentUploadStep({
     setPassportFile,
     certificateFiles,
     setCertificateFiles,
+    proofFiles,
+    setProofFiles,
     onSave,
     joiningDetails,
     candidateId,
@@ -106,13 +110,23 @@ export default function DocumentUploadStep({
     const handleCertificatesChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
             const newFiles = Array.from(event.target.files);
-            // Append new files to existing ones
             setCertificateFiles((prev) => [...prev, ...newFiles]);
+        }
+    };
+
+    const handleProofChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files) {
+            const newFiles = Array.from(event.target.files);
+            setProofFiles((prev) => [...prev, ...newFiles]);
         }
     };
 
     const removeCertificate = (index: number) => {
         setCertificateFiles((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const removeProof = (index: number) => {
+        setProofFiles((prev) => prev.filter((_, i) => i !== index));
     };
 
     const removePassport = () => {
@@ -140,16 +154,23 @@ export default function DocumentUploadStep({
         await onSave();
     };
 
-    const hasUploads = passportFile !== null || certificateFiles.length > 0;
+    const hasUploads = passportFile !== null || certificateFiles.length > 0 || proofFiles.length > 0;
 
     // Helper to extract documents safely
     const existingPassport = joiningDetails?.documents?.['passport'] as { _id?: string; url: string; status: string; comment: string } | undefined;
     const existingCertificates = joiningDetails?.documents?.['certificates'];
+    const existingProof = joiningDetails?.documents?.['proof'];
 
     const certList = Array.isArray(existingCertificates) 
         ? existingCertificates 
         : existingCertificates 
             ? [existingCertificates] 
+            : [];
+
+    const proofList = Array.isArray(existingProof)
+        ? existingProof
+        : existingProof
+            ? [existingProof]
             : [];
 
     const getFullUrl = (url: string) => {
@@ -234,7 +255,7 @@ export default function DocumentUploadStep({
                                                         size="small" 
                                                         onClick={() => handleDeleteDocument(existingPassport._id!)}
                                                         color="error"
-                                                        disabled={loading || !!deletingId}
+                                                        disabled={loading || !!deletingId || existingPassport.status === 'APPROVED'}
                                                     >
                                                         <DeleteIcon fontSize="small" />
                                                     </IconButton>
@@ -248,11 +269,16 @@ export default function DocumentUploadStep({
                             <Button
                                 component="label"
                                 variant={passportFile ? "outlined" : "contained"}
-                                startIcon={<CloudUploadIcon />}
+                                startIcon={existingPassport?.status === 'APPROVED' ? <CheckCircleIcon /> : <CloudUploadIcon />}
                                 sx={{ mb: 2, minWidth: 200 }}
+                                disabled={existingPassport?.status === 'APPROVED'}
                             >
-                                {passportFile ? 'Change Photo' : (existingPassport ? 'Update Passport' : 'Upload Passport')}
-                                <VisuallyHiddenInput type="file" onChange={handlePassportChange} accept="image/*" />
+                                {existingPassport?.status === 'APPROVED' 
+                                    ? 'Passport Approved' 
+                                    : (passportFile ? 'Change Photo' : ( existingPassport ? 'Update Passport' : 'Upload Passport'))}
+                                {existingPassport?.status !== 'APPROVED' && (
+                                    <VisuallyHiddenInput type="file" onChange={handlePassportChange} accept="image/*" />
+                                )}
                             </Button>
                             
                             {passportFile && (
@@ -394,6 +420,137 @@ export default function DocumentUploadStep({
                                         />
                                         <ListItemSecondaryAction>
                                             <IconButton edge="end" aria-label="delete" onClick={() => removeCertificate(index)}>
+                                                <DeleteIcon color="action" />
+                                            </IconButton>
+                                        </ListItemSecondaryAction>
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </Box>
+                    )}
+                </Box>
+
+                <Divider sx={{ my: 4 }} />
+
+                {/* Proof Section */}
+                <Box>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1, color: '#1E293B' }}>
+                        3. Signed Offer Letter & Guarantor Documents <Typography component="span" color="error">*</Typography>
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                        Please upload a signed copy of your offer letter, your guarantor's NIN, and your guarantor's passport photograph or any valid identification.
+                    </Typography>
+                    
+                    {/* Existing Proof List */}
+                    {proofList.length > 0 && (
+                         <Box sx={{ mb: 3 }}>
+                            <Typography variant="subtitle2" sx={{ mb: 1, color: '#1E293B' }}>
+                                Previously Uploaded ({proofList.length})
+                            </Typography>
+                            <List disablePadding>
+                                {proofList.map((doc: any, index: number) => (
+                                    <ListItem 
+                                        key={index} 
+                                        sx={{ 
+                                            bgcolor: '#F1F5F9', 
+                                            mb: 1, 
+                                            borderRadius: 2, 
+                                            border: '1px solid #E2E8F0',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center'
+                                        }}
+                                    >
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <ListItemIcon>
+                                                <CheckCircleIcon sx={{ color: '#10B981' }} />
+                                            </ListItemIcon>
+                                            <ListItemText 
+                                                primary={doc.fileName || "Guarantor Document"} 
+                                                secondary={`Status: ${doc.status || 'Submitted'}`}
+                                                primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+                                            />
+                                        </Box>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <Button size="small" href={getFullUrl(doc.url)} target="_blank" sx={{ mr: 1 }}>View</Button>
+                                            
+                                            {doc._id && (
+                                                <Box>
+                                                    {deletingId === doc._id ? (
+                                                        <CircularProgress size={20} color="primary" sx={{ m: 1 }} />
+                                                    ) : (
+                                                        <IconButton 
+                                                            edge="end" 
+                                                            aria-label="delete" 
+                                                            onClick={() => handleDeleteDocument(doc._id)}
+                                                            disabled={loading || !!deletingId}
+                                                            color="error"
+                                                        >
+                                                            <DeleteIcon color="action" />
+                                                        </IconButton>
+                                                    )}
+                                                </Box>
+                                            )}
+                                        </Box>
+                                    </ListItem>
+                                ))}
+                            </List>
+                        </Box>
+                    )}
+
+                    <Box 
+                        component="label"
+                        sx={{
+                            border: '2px dashed #E2E8F0',
+                            borderRadius: '16px',
+                            p: 4,
+                            textAlign: 'center',
+                            cursor: 'pointer',
+                            display: 'block',
+                            transition: 'all 0.2s ease-in-out',
+                            backgroundColor: '#F8FAFC',
+                            '&:hover': {
+                                borderColor: 'primary.main',
+                                backgroundColor: '#F1F5F9',
+                            },
+                        }}
+                    >
+                        <CloudUploadIcon sx={{ fontSize: 48, color: '#CBD5E1', mb: 2 }} />
+                        <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600, color: '#1E293B', mb: 0.5 }}>
+                            Click to upload guarantor documents
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#64748B' }}>
+                            Images or PDF (Signed Offer, NIN, ID)
+                        </Typography>
+                        <VisuallyHiddenInput type="file" multiple onChange={handleProofChange} accept=".pdf,.png,.jpg,.jpeg" />
+                    </Box>
+
+                    {proofFiles.length > 0 && (
+                        <Box sx={{ mt: 4 }}>
+                            <Typography variant="subtitle2" sx={{ mb: 2, color: '#1E293B' }}>
+                                New Uploads ({proofFiles.length})
+                            </Typography>
+                            <List disablePadding>
+                                {proofFiles.map((file, index) => (
+                                    <ListItem 
+                                        key={index} 
+                                        sx={{ 
+                                            bgcolor: '#F8FAFC', 
+                                            mb: 1, 
+                                            borderRadius: 2, 
+                                            border: '1px solid #E2E8F0' 
+                                        }}
+                                    >
+                                        <ListItemIcon>
+                                            <InsertDriveFileIcon sx={{ color: '#2962FF' }} />
+                                        </ListItemIcon>
+                                        <ListItemText 
+                                            primary={file.name} 
+                                            secondary={`${(file.size / 1024 / 1024).toFixed(2)} MB`}
+                                            primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }}
+                                        />
+                                        <ListItemSecondaryAction>
+                                            <IconButton edge="end" aria-label="delete" onClick={() => removeProof(index)}>
                                                 <DeleteIcon color="action" />
                                             </IconButton>
                                         </ListItemSecondaryAction>
