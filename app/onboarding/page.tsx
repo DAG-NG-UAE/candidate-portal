@@ -97,13 +97,11 @@ export default function OnboardingPage() {
   };
 
   const handleFinalSubmit = async () => {
-    // You might want to upload documents here before final submission
-    // For now, we proceed with signature submission
     const success = await callSubmitDetails(signature);
     if (success) {
         dispatch(clearOfferState());
         dispatch(clearCandidateState());
-        router.push('/success');
+        router.push('/dashboard');
     }
   };
 
@@ -142,7 +140,7 @@ export default function OnboardingPage() {
         dispatch(clearCandidateState());
         setOpenRejectModal(false);
         // Navigate to a thank you/exit page or back to home
-        router.push('/success'); 
+        router.push('/rejected'); 
     }
   };
 

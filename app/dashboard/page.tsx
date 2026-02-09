@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, Suspense } from "react";
+import React, { useEffect, Suspense, useRef, useState } from "react";
 import {
   Box,
   Typography,
@@ -41,9 +41,11 @@ import {
   callGetJoiningDetails,
   callGetGuarantorDetails,
   fetchOfferDetails,
+  callSaveDocuments,
 } from "@/redux/slices/offer";
 import { useSearchParams, useRouter } from "next/navigation";
 import { API_BASE_URL } from "@/api/axiosInstance";
+import { useSnackbar } from "notistack";
 
 function DashboardContent() {
   const theme = useTheme();
@@ -51,6 +53,7 @@ function DashboardContent() {
   const router = useRouter();
   const token = searchParams.get("token");
   const dispatch = useDispatch();
+  const { enqueueSnackbar } = useSnackbar();
   
   const { loading: candidateLoading, candidate, error } = useSelector(
     (state) => state.candidates
@@ -61,6 +64,9 @@ function DashboardContent() {
     offerDetails,
     loading: offerLoading,
   } = useSelector((state) => state.offers);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [replacingDoc, setReplacingDoc] = useState<{ id: string; type: string } | null>(null);
 
   useEffect(() => {
     if (token) {
@@ -85,6 +91,32 @@ function DashboardContent() {
     const base = API_BASE_URL?.replace(/\/+$/, '') || '';
     const path = url.replace(/^\/+/, '');
     return `${base}/${path}`;
+  };
+
+  const handleReplaceClick = (docId: string, type: string) => {
+    setReplacingDoc({ id: docId, type });
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const onFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && replacingDoc && candidate && offerDetails?.offer_id) {
+        const formData = new FormData();
+        formData.append("candidateId", candidate.candidate_id);
+        formData.append("offerId", offerDetails.offer_id);
+        formData.append("documentId", replacingDoc.id);
+        formData.append(replacingDoc.type, file);
+
+        await callSaveDocuments(formData);
+        await callGetJoiningDetails()
+       enqueueSnackbar("Document replaced successfully", { variant: "success" });
+       
+    }
+    // Reset state and input
+    setReplacingDoc(null);
+    if (event.target) event.target.value = '';
   };
 
   if (candidateLoading || (candidate && !joiningDetails && offerLoading)) {
@@ -186,6 +218,8 @@ function DashboardContent() {
             const cat = categories.find(c => c.id === targetCategoryId);
             if (cat) {
                 cat.docs.push({
+                    _id: d._id,
+                    dbKey: key, // Added to know which field to use for upload
                     name: displayName,
                     fileName: d.fileName,
                     url: d.url,
@@ -215,6 +249,15 @@ function DashboardContent() {
 
   return (
     <Box sx={{ bgcolor: "#F0F4FA", minHeight: "100vh", pb: 10 }}>
+      {/* Hidden file input */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        style={{ display: 'none' }} 
+        onChange={onFileChange}
+        accept=".pdf,.jpg,.jpeg,.png"
+      />
+
       {/* Header */}
       <Box
         sx={{
@@ -282,7 +325,6 @@ function DashboardContent() {
                 Status: <Box component="span" sx={{ color: "#FBBF24", fontWeight: 700 }}>Under Review</Box>
               </Typography>
             </Box>
-           
           </Box>
           <Box sx={{ position: "absolute", top: -40, right: -40, width: 200, height: 200, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
         </Paper>
@@ -384,12 +426,13 @@ function DashboardContent() {
                                     )}
                                     {doc.attention && (
                                         <Button 
-                                        size="small" 
-                                        variant={doc.attention ? "contained" : "text"} 
-                                        sx={{ textTransform: "none", fontWeight: 800, fontSize: '0.75rem', boxShadow: 'none' }}
-                                    >
-                                        {doc.attention ? "Replace" : ""}
-                                    </Button>
+                                            size="small" 
+                                            variant="contained" 
+                                            onClick={() => handleReplaceClick(doc._id, doc.dbKey)}
+                                            sx={{ textTransform: "none", fontWeight: 800, fontSize: '0.75rem', boxShadow: 'none' }}
+                                        >
+                                            Replace
+                                        </Button>
                                     )}
                                 </Box>
                               </Box>

@@ -108,7 +108,7 @@ export const saveDocuments = async (formData: FormData) => {
 export const savePreOfferDocument = async (formData: FormData) => {
   try {
     const response = await axiosInstance.post(
-      `/application/pre-offer/document/save`,
+      `/application/pre-offer/save`,
       formData,
       {
         headers: {
@@ -136,25 +136,6 @@ export const deleteUploadedDocument = async (payload: {
     return error;
   }
 };
-
-// export const RequestRevision = async (payload: {
-//   contactEmail: string;
-//   contactPhone: string;
-//   message: string;
-// }) => {
-//   try {
-//     const response = await axiosInstance.post(`/offer/revision/request`, {
-//       requestRevision: {
-//         preferred_email: payload.contactEmail,
-//         preferred_contact_number: payload.contactPhone,
-//         message: payload.message,
-//       },
-//     });
-//     return response.data;
-//   } catch (error) {
-//     return error;
-//   }
-// };
 
 export const getPreOfferDocuments = async (candidateId: string) => {
   try {
