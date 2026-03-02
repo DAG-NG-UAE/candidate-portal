@@ -19,6 +19,7 @@ import {
   CircularProgress,
   useTheme,
   Paper,
+  Backdrop,
 } from "@mui/material";
 import {
   NotificationsNone,
@@ -46,6 +47,7 @@ import {
 import { useSearchParams, useRouter } from "next/navigation";
 import { API_BASE_URL } from "@/api/axiosInstance";
 import { useSnackbar } from "notistack";
+import { getCandidateDocuments } from "@/api/offer";
 
 function DashboardContent() {
   const theme = useTheme();
@@ -54,7 +56,7 @@ function DashboardContent() {
   const token = searchParams.get("token");
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
-  
+
   const { loading: candidateLoading, candidate, error } = useSelector(
     (state) => state.candidates
   );
@@ -66,7 +68,8 @@ function DashboardContent() {
   } = useSelector((state) => state.offers);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [replacingDoc, setReplacingDoc] = useState<{ id: string; type: string } | null>(null);
+  const [replacingDoc, setReplacingDoc] = useState<{ id: string; type: string, url: string } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -93,8 +96,8 @@ function DashboardContent() {
     return `${base}/${path}`;
   };
 
-  const handleReplaceClick = (docId: string, type: string) => {
-    setReplacingDoc({ id: docId, type });
+  const handleReplaceClick = (docId: string, type: string, url: string) => {
+    setReplacingDoc({ id: docId, type, url });
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -103,16 +106,23 @@ function DashboardContent() {
   const onFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && replacingDoc && candidate && offerDetails?.offer_id) {
+      setIsUploading(true);
+      try {
         const formData = new FormData();
         formData.append("candidateId", candidate.candidate_id);
         formData.append("offerId", offerDetails.offer_id);
         formData.append("documentId", replacingDoc.id);
+        formData.append("documentUrl", replacingDoc.url);
         formData.append(replacingDoc.type, file);
 
         await callSaveDocuments(formData);
-        await callGetJoiningDetails()
-       enqueueSnackbar("Document replaced successfully", { variant: "success" });
-       
+        await callGetJoiningDetails();
+        enqueueSnackbar("Document replaced successfully", { variant: "success" });
+      } catch (error) {
+        enqueueSnackbar("Failed to replace document", { variant: "error" });
+      } finally {
+        setIsUploading(false);
+      }
     }
     // Reset state and input
     setReplacingDoc(null);
@@ -151,11 +161,11 @@ function DashboardContent() {
   }
 
   if (!candidate) {
-      return (
-        <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#F0F4FA" }}>
-            <Typography variant="h6" color="text.secondary">Please wait while we verify your session...</Typography>
-        </Box>
-      )
+    return (
+      <Box sx={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#F0F4FA" }}>
+        <Typography variant="h6" color="text.secondary">Please wait while we verify your session...</Typography>
+      </Box>
+    )
   }
 
   const firstName = candidate.first_name || "Candidate";
@@ -180,56 +190,56 @@ function DashboardContent() {
 
   const getCategorizedDocs = () => {
     const categories = [
-        { id: 'identity', title: "IDENTITY & CITIZENSHIP", icon: <Badge />, docs: [] as any[] },
-        { id: 'education', title: "EDUCATION & CERTIFICATES", icon: <School />, docs: [] as any[] },
-        { id: 'residency', title: "PROOF OF RESIDENCY", icon: <Home />, docs: [] as any[] },
+      { id: 'identity', title: "IDENTITY & CITIZENSHIP", icon: <Badge />, docs: [] as any[] },
+      { id: 'education', title: "EDUCATION & CERTIFICATES", icon: <School />, docs: [] as any[] },
+      { id: 'residency', title: "PROOF OF RESIDENCY", icon: <Home />, docs: [] as any[] },
     ];
 
     const docs = joiningDetails?.documents || {};
-    
+
     Object.entries(docs).forEach(([key, value]) => {
-        if (!value) return;
-        const docList = Array.isArray(value) ? value : [value];
-        
-        docList.forEach((d: any) => {
-            let targetCategoryId = 'residency';
-            let displayName = d.fileName || key;
+      if (!value) return;
+      const docList = Array.isArray(value) ? value : [value];
 
-            if (key === 'passport') {
-                targetCategoryId = 'identity';
-                displayName = "Passport Image";
-            } else if (key === 'certificates') {
-                targetCategoryId = 'education';
-                displayName = d.fileName || "Academic Certificate";
-            } else if (key === 'proof') {
-                const lowerName = d.fileName?.toLowerCase() || '';
-                if (lowerName.includes('nin')) {
-                    targetCategoryId = 'identity';
-                    displayName = "NIN Slip";
-                } else if (lowerName.includes('utility')) {
-                    targetCategoryId = 'residency';
-                    displayName = "Utility Bill";
-                } else {
-                    targetCategoryId = 'residency';
-                    displayName = d.fileName || "Proof of Document";
-                }
-            }
+      docList.forEach((d: any) => {
+        let targetCategoryId = 'residency';
+        let displayName = d.fileName || key;
 
-            const cat = categories.find(c => c.id === targetCategoryId);
-            if (cat) {
-                cat.docs.push({
-                    _id: d._id,
-                    dbKey: key, // Added to know which field to use for upload
-                    name: displayName,
-                    fileName: d.fileName,
-                    url: d.url,
-                    status: d.status || "SUBMITTED",
-                    attention: d.status === 'REJECTED',
-                    locked: d.status === 'APPROVED',
-                    reason: d.comment
-                });
-            }
-        });
+        if (key === 'passport') {
+          targetCategoryId = 'identity';
+          displayName = "Passport Image";
+        } else if (key === 'certificates') {
+          targetCategoryId = 'education';
+          displayName = d.fileName || "Academic Certificate";
+        } else if (key === 'proof') {
+          const lowerName = d.fileName?.toLowerCase() || '';
+          if (lowerName.includes('nin')) {
+            targetCategoryId = 'identity';
+            displayName = "NIN Slip";
+          } else if (lowerName.includes('utility')) {
+            targetCategoryId = 'residency';
+            displayName = "Utility Bill";
+          } else {
+            targetCategoryId = 'residency';
+            displayName = d.fileName || "Proof of Document";
+          }
+        }
+
+        const cat = categories.find(c => c.id === targetCategoryId);
+        if (cat) {
+          cat.docs.push({
+            _id: d._id,
+            dbKey: key, // Added to know which field to use for upload
+            name: displayName,
+            fileName: d.fileName,
+            url: d.url,
+            status: d.status || "SUBMITTED",
+            attention: d.status === 'REJECTED',
+            locked: d.status === 'APPROVED',
+            reason: d.comment
+          });
+        }
+      });
     });
 
     return categories;
@@ -250,10 +260,10 @@ function DashboardContent() {
   return (
     <Box sx={{ bgcolor: "#F0F4FA", minHeight: "100vh", pb: 10 }}>
       {/* Hidden file input */}
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        style={{ display: 'none' }} 
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
         onChange={onFileChange}
         accept=".pdf,.jpg,.jpeg,.png"
       />
@@ -296,7 +306,7 @@ function DashboardContent() {
           sx={{
             background: "linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%)",
             color: "white",
-            p: { xs: 3, md: 4 }, 
+            p: { xs: 3, md: 4 },
             borderRadius: 4,
             mb: 4,
             position: "relative",
@@ -307,21 +317,21 @@ function DashboardContent() {
             <Chip
               label="CURRENT STEP: VERIFICATION"
               size="small"
-              sx={{ 
-                  bgcolor: "rgba(255,255,255,0.15)", 
-                  color: "white", 
-                  fontWeight: 700, 
-                  mb: 1.5, 
-                  borderRadius: "4px",
-                  fontSize: '0.65rem'
+              sx={{
+                bgcolor: "rgba(255,255,255,0.15)",
+                color: "white",
+                fontWeight: 700,
+                mb: 1.5,
+                borderRadius: "4px",
+                fontSize: '0.65rem'
               }}
             />
             <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, fontSize: { xs: '1.5rem', md: '2.25rem' } }}>
-              Hi {firstName}, we are reviewing <br/>your documents...
+              Hi {firstName}, we are reviewing <br />your documents...
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 3 }}>
-               <AccessTime sx={{ color: '#FBBF24', fontSize: 20 }} />
-               <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '1rem' }}>
+              <AccessTime sx={{ color: '#FBBF24', fontSize: 20 }} />
+              <Typography variant="body1" sx={{ opacity: 0.9, fontWeight: 500, fontSize: '1rem' }}>
                 Status: <Box component="span" sx={{ color: "#FBBF24", fontWeight: 700 }}>Under Review</Box>
               </Typography>
             </Box>
@@ -385,7 +395,7 @@ function DashboardContent() {
                 <Box key={idx} sx={{ mb: 5 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2.5 }}>
                     <Box sx={{ bgcolor: '#DBEAFE', p: 0.8, borderRadius: 2, display: 'flex' }}>
-                        {React.cloneElement(category.icon as React.ReactElement, { sx: { fontSize: 18, color: "primary.main" } })}
+                      {React.cloneElement(category.icon as React.ReactElement, { sx: { fontSize: 18, color: "primary.main" } })}
                     </Box>
                     <Typography variant="overline" sx={{ fontWeight: 800, color: "#64748B", letterSpacing: 1.5 }}>{category.title}</Typography>
                   </Box>
@@ -401,39 +411,38 @@ function DashboardContent() {
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: 'flex-start', mb: 0.5 }}>
                                 <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                    {doc.name}
+                                  {doc.name}
                                 </Typography>
                                 {doc.locked && <Lock sx={{ fontSize: 16, color: "#94A3B8" }} />}
                               </Box>
                               <Typography variant="caption" sx={{ color: "#64748B", display: "block", mb: 2, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {doc.fileName || "Awaiting processing..."}
                               </Typography>
-                              
+
                               <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <Chip label={doc.status} size="small" sx={{ height: 22, fontSize: "0.65rem", fontWeight: 900, borderRadius: 1.5, bgcolor: getStatusChipBg(doc.status), color: getStatusChipText(doc.status) }} />
                                 <Box sx={{ display: 'flex', gap: 1 }}>
-                                    {doc.url && (
-                                        <Button 
-                                            size="small" 
-                                            variant="text" 
-                                            startIcon={<OpenInNew sx={{ fontSize: 14 }} />}
-                                            href={getFullUrl(doc.url)}
-                                            target="_blank"
-                                            sx={{ textTransform: "none", fontWeight: 800, fontSize: '0.75rem' }}
-                                        >
-                                            View
-                                        </Button>
-                                    )}
-                                    {doc.attention && (
-                                        <Button 
-                                            size="small" 
-                                            variant="contained" 
-                                            onClick={() => handleReplaceClick(doc._id, doc.dbKey)}
-                                            sx={{ textTransform: "none", fontWeight: 800, fontSize: '0.75rem', boxShadow: 'none' }}
-                                        >
-                                            Replace
-                                        </Button>
-                                    )}
+                                  {doc.url && (
+                                    <Button
+                                      size="small"
+                                      variant="text"
+                                      startIcon={<OpenInNew sx={{ fontSize: 14 }} />}
+                                      onClick={() => getCandidateDocuments(doc.url)}
+                                      sx={{ textTransform: "none", fontWeight: 800, fontSize: '0.75rem' }}
+                                    >
+                                      View
+                                    </Button>
+                                  )}
+                                  {doc.attention && (
+                                    <Button
+                                      size="small"
+                                      variant="contained"
+                                      onClick={() => handleReplaceClick(doc._id, doc.dbKey, doc.url)}
+                                      sx={{ textTransform: "none", fontWeight: 800, fontSize: '0.75rem', boxShadow: 'none' }}
+                                    >
+                                      Replace
+                                    </Button>
+                                  )}
                                 </Box>
                               </Box>
                             </Box>
@@ -448,28 +457,75 @@ function DashboardContent() {
           </Box>
         </Box>
       </Container>
+
+      <Backdrop
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          flexDirection: 'column',
+          gap: 2,
+          backdropFilter: 'blur(4px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        }}
+        open={isUploading}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            p: 4,
+            borderRadius: 5,
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            maxWidth: 320,
+            textAlign: 'center'
+          }}
+        >
+          <CircularProgress size={48} thickness={4} sx={{ mb: 2 }} />
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 800,
+              color: '#1E293B',
+              animation: 'pulsate 1.5s infinite ease-in-out',
+              '@keyframes pulsate': {
+                '0%': { opacity: 0.4 },
+                '50%': { opacity: 1 },
+                '100%': { opacity: 0.4 },
+              },
+            }}
+          >
+            Processing Document
+          </Typography>
+          <Typography variant="body2" sx={{ color: "#64748B", mt: 1, fontWeight: 500 }}>
+            This might take a moment due to backend verification.
+          </Typography>
+        </Box>
+      </Backdrop>
     </Box>
   );
 }
 
 const getStatusChipBg = (status: string) => {
-    switch (status?.toUpperCase()) {
-        case 'APPROVED': return '#DCFCE7';
-        case 'REJECTED': return '#FEE2E2';
-        case 'UNDER REVIEW': return '#FEF3C7';
-        case 'PENDING': return '#F1F5F9';
-        default: return '#F1F5F9';
-    }
+  switch (status?.toUpperCase()) {
+    case 'APPROVED': return '#DCFCE7';
+    case 'REJECTED': return '#FEE2E2';
+    case 'UNDER REVIEW': return '#FEF3C7';
+    case 'PENDING': return '#F1F5F9';
+    default: return '#F1F5F9';
+  }
 }
 
 const getStatusChipText = (status: string) => {
-    switch (status?.toUpperCase()) {
-        case 'APPROVED': return '#166534';
-        case 'REJECTED': return '#991B1B';
-        case 'UNDER REVIEW': return '#92400E';
-        case 'PENDING': return '#475569';
-        default: return '#475569';
-    }
+  switch (status?.toUpperCase()) {
+    case 'APPROVED': return '#166534';
+    case 'REJECTED': return '#991B1B';
+    case 'UNDER REVIEW': return '#92400E';
+    case 'PENDING': return '#475569';
+    default: return '#475569';
+  }
 }
 
 export default function DashboardPage() {

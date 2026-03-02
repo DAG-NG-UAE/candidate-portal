@@ -52,11 +52,13 @@ export default function OnboardingPage() {
     callGetJoiningDetails();
   }, [candidate])
 
-//   console.log(`the offer details are ${JSON.stringify(offerDetails)}`)
   const handleNext = () => {
-    //we want to accept the offer
-    callAcceptOffer()
-    setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
+    if(offerDetails?.status == "accepted"){ 
+        // there is no need to call the api again
+        setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
+    }else{ 
+        callAcceptOffer()
+    }
   };
 
   const handleBack = () => {
@@ -283,19 +285,36 @@ export default function OnboardingPage() {
                              Request Revision
                          </Button> */}
 
-                         <Button 
-                            variant="outlined"
-                            size="large"
-                            color="error"
-                            onClick={handleDeclineClick}
-                            sx={{ 
-                                minWidth: 120,
-                                borderRadius: '10px',
-                                textTransform: 'none'
-                             }}
-                         >
-                             Decline
-                         </Button>
+                         {offerDetails?.status == 'accepted' ? (
+                            <Button 
+                                variant="outlined"
+                                size="large"
+                                color="error"
+                                onClick={handleDeclineClick}
+                                sx={{ 
+                                    minWidth: 120,
+                                    borderRadius: '10px',
+                                    textTransform: 'none'
+                                }}
+                            >
+                                Speak with HR
+                            </Button>
+                         ): (
+                            <Button 
+                                variant="outlined"
+                                size="large"
+                                color="error"
+                                onClick={handleDeclineClick}
+                                sx={{ 
+                                    minWidth: 120,
+                                    borderRadius: '10px',
+                                    textTransform: 'none'
+                                }}
+                            >
+                                Decline
+                            </Button>
+                         )}
+                         
                          <Button 
                             variant="contained"
                             size="large"

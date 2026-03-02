@@ -31,13 +31,15 @@ const VisuallyHiddenInput = styled('input')({
 });
 
 interface PreOfferDoc {
-    id: string; // e.g. "payslip"
-    url: string | null;
-    type: string;
-    status: 'awaiting_upload' | 'uploaded' | 'approved' | 'rejected' | 'pending_review';
-    updatedAt: string;
-    displayName: string;
-    comment?: string;
+    pre_offer_requested_docs:{
+        id: string; // e.g. "payslip"
+        url: string | null;
+        type: string;
+        status: 'awaiting_upload' | 'uploaded' | 'approved' | 'rejected' | 'pending_review';
+        updatedAt: string;
+        displayName: string;
+        comment?: string;
+    }[]
 }
 
 interface PreOfferDocumentsProps {
@@ -45,7 +47,7 @@ interface PreOfferDocumentsProps {
 }
 
 export default function PreOfferDocuments({ candidate }: PreOfferDocumentsProps) {
-    const [documents, setDocuments] = useState<PreOfferDoc[]>([]);
+    const [documents, setDocuments] = useState<PreOfferDoc>();
     const [loading, setLoading] = useState(true);
     const [uploadingState, setUploadingState] = useState<{ [key: string]: boolean }>({});
     const { enqueueSnackbar } = useSnackbar();
@@ -178,7 +180,7 @@ export default function PreOfferDocuments({ candidate }: PreOfferDocumentsProps)
                         </Box>
                     ) : (
                         <List sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            {documents.map((doc) => (
+                            {documents?.pre_offer_requested_docs.map((doc) => (
                                 <ListItem 
                                     key={doc.id}
                                     sx={{ 
@@ -311,7 +313,7 @@ export default function PreOfferDocuments({ candidate }: PreOfferDocumentsProps)
                      
                      <Box sx={{ mt: 4, textAlign: 'center' }}>
                         <Button 
-                            disabled={documents.some(d => d.status === 'awaiting_upload' || d.status === 'rejected')}
+                            disabled={documents?.pre_offer_requested_docs.some(d => d.status === 'awaiting_upload' || d.status === 'rejected')}
                             variant="contained"
                             size="large"
                             sx={{ 
@@ -324,7 +326,7 @@ export default function PreOfferDocuments({ candidate }: PreOfferDocumentsProps)
                         >
                             All Documents Submitted
                         </Button>
-                         {documents.some(d => d.status === 'awaiting_upload' || d.status === 'rejected') && (
+                         {documents?.pre_offer_requested_docs.some(d => d.status === 'awaiting_upload' || d.status === 'rejected') && (
                              <Typography variant="body2" sx={{ mt: 2, color: 'text.secondary' }}>
                                  Please upload all required documents to proceed.
                              </Typography>
