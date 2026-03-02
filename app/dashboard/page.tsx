@@ -395,7 +395,7 @@ function DashboardContent() {
                 <Box key={idx} sx={{ mb: 5 }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2.5 }}>
                     <Box sx={{ bgcolor: '#DBEAFE', p: 0.8, borderRadius: 2, display: 'flex' }}>
-                      {React.cloneElement(category.icon as React.ReactElement, { sx: { fontSize: 18, color: "primary.main" } })}
+                      {React.cloneElement(category.icon as React.ReactElement<any>, { sx: { fontSize: 18, color: "primary.main" } })}
                     </Box>
                     <Typography variant="overline" sx={{ fontWeight: 800, color: "#64748B", letterSpacing: 1.5 }}>{category.title}</Typography>
                   </Box>
