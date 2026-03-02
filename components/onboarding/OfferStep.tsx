@@ -21,7 +21,7 @@ export default function OfferStep() {
     try {
       // @ts-ignore
       const html2pdf = (await import('html2pdf.js')).default;
-      
+
       const opt = {
         margin: [15, 15] as [number, number],
         filename: `Offer_Letter_${candidate?.first_name || 'Candidate'}_${candidate?.last_name || ''}.pdf`,
@@ -55,45 +55,45 @@ export default function OfferStep() {
         </Typography>
       </Box>
 
-      <Card 
+      <Card
         ref={pdfRef}
         sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', position: 'relative' }}
       >
-          
+
         {/* Download Button */}
         <Button
-            startIcon={<DownloadIcon />}
-            variant="outlined"
-            size="small"
-            onClick={handleDownload}
-            data-html2canvas-ignore="true"
-            sx={{ 
-                position: 'absolute', 
-                top: 24, 
-                right: 24,
-                display: { xs: 'none', sm: 'flex' },
-                borderRadius: '8px',
-                textTransform: 'none',
-                borderColor: '#E2E8F0',
-                color: '#64748B',
-                '&:hover': {
-                    borderColor: '#CBD5E1',
-                    bgcolor: '#F8FAFC'
-                }
-            }}
+          startIcon={<DownloadIcon />}
+          variant="outlined"
+          size="small"
+          onClick={handleDownload}
+          data-html2canvas-ignore="true"
+          sx={{
+            position: 'absolute',
+            top: 24,
+            right: 24,
+            display: { xs: 'none', sm: 'flex' },
+            borderRadius: '8px',
+            textTransform: 'none',
+            borderColor: '#E2E8F0',
+            color: '#64748B',
+            '&:hover': {
+              borderColor: '#CBD5E1',
+              bgcolor: '#F8FAFC'
+            }
+          }}
         >
-            Download PDF
+          Download PDF
         </Button>
 
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <Box 
-            sx={{ 
-              width: 56, 
-              height: 56, 
-              bgcolor: '#E3F2FD', 
-              borderRadius: '50%', 
-              display: 'flex', 
-              alignItems: 'center', 
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              bgcolor: '#E3F2FD',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
               justifyContent: 'center',
               mx: 'auto',
               mb: 2,
@@ -112,14 +112,14 @@ export default function OfferStep() {
 
         <Divider sx={{ mb: 4, borderColor: '#F1F5F9' }} />
 
-          <Box sx={{ color: '#334155', mb: 2 }}>
+        <Box sx={{ color: '#334155', mb: 2 }}>
           <Typography paragraph variant="body2" sx={{ lineHeight: 1.8 }}>
             Dear {candidate?.first_name} {candidate?.last_name},
           </Typography>
           <Typography paragraph variant="body2" sx={{ lineHeight: 1.8 }}>
             We are pleased to offer you the position of <strong>{offerDetails?.position}</strong> at <strong>{offerDetails?.company_name}</strong>.
           </Typography>
-          
+
           {/* <Box sx={{ mt: 3, p: 3, bgcolor: '#F8FAFC', borderRadius: 2 }}>
               <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: '#1E293B' }}>
               Position Details:
@@ -142,11 +142,11 @@ export default function OfferStep() {
                 )}
 
                 {/* 2. Content with Dangerously Set Inner HTML */}
-                <Typography 
-                  variant="body2" 
+                <Typography
+                  variant="body2"
                   component="div" // This is important so MUI doesn't use a <p> tag
-                  sx={{ 
-                    lineHeight: 1.8, 
+                  sx={{
+                    lineHeight: 1.8,
                     color: '#475569',
                     /* This CSS ensures your table looks good inside the MUI Typography */
                     '& table': {
@@ -163,62 +163,62 @@ export default function OfferStep() {
                       backgroundColor: '#F8FAFC',
                     }
                   }}
-                  dangerouslySetInnerHTML={{ __html: clause.content }} 
+                  dangerouslySetInnerHTML={{ __html: clause.content }}
                 />
               </Box>
             ))}
           </Box>
-          
+
           <Box sx={{ mt: 6 }}>
-                  <Typography variant="body1">Yours Sincerely,</Typography>
-                  <Typography variant="body1" sx={{ mt: 1, fontWeight: 'bold' }}>
-                    For: {offerDetails?.company_name ? offerDetails.company_name.toUpperCase() : ''}
-                  </Typography>
-                  
-                  {/* The Signature Image */}
-                 <Box sx={{ position: 'relative', width: 'fit-content' }}>
-                    {/* The Signature Image */}
-                    <img 
-                      src={offerDetails?.signature_path ? `http://localhost:5000/${offerDetails.signature_path.replace(/\\/g, '/').replace(/^\/+/, '')}` : null} 
-                      style={{ 
-                        height: '70px', 
-                        display: 'block',
-                        filter: 'contrast(1.1)' // Makes it pop
-                      }} 
-                      alt="signature"
-                    />
+            <Typography variant="body1">Yours Sincerely,</Typography>
+            <Typography variant="body1" sx={{ mt: 1, fontWeight: 'bold' }}>
+              For: {offerDetails?.company_name ? offerDetails.company_name.toUpperCase() : ''}
+            </Typography>
 
-                    {/* The Overlapping Watermark */}
-                    <Box 
-                      sx={{ 
-                        position: 'absolute', 
-                        top: '10px', 
-                        left: '20px', 
-                        width: '80px', 
-                        height: '80px',
-                        opacity: 0.2, // Keep it faint but visible
-                        pointerEvents: 'none', // Can't right-click the watermark instead of sig
-                        backgroundImage: 'url(/Company-Seal.png)',
-                        backgroundSize: 'contain',
-                        backgroundRepeat: 'no-repeat',
-                        zIndex: 2,
-                        transform: 'rotate(-15deg)'
-                      }} 
-                    />
-                  </Box>
+            {/* The Signature Image */}
+            <Box sx={{ position: 'relative', width: 'fit-content' }}>
+              {/* The Signature Image */}
+              <img
+                src={offerDetails?.signature_path ? `http://localhost:5000/${offerDetails.signature_path.replace(/\\/g, '/').replace(/^\/+/, '')}` : undefined}
+                style={{
+                  height: '70px',
+                  display: 'block',
+                  filter: 'contrast(1.1)' // Makes it pop
+                }}
+                alt="signature"
+              />
 
-                  <Box sx={{ mt: offerDetails?.signature_path ? 0 : 4 }}>
-                    <Typography variant="body1" fontWeight="bold">
-                      {offerDetails?.user_name || "____________________"}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Authorized Signatory
-                    </Typography>
-                  </Box>
-                </Box>
+              {/* The Overlapping Watermark */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: '10px',
+                  left: '20px',
+                  width: '80px',
+                  height: '80px',
+                  opacity: 0.2, // Keep it faint but visible
+                  pointerEvents: 'none', // Can't right-click the watermark instead of sig
+                  backgroundImage: 'url(/Company-Seal.png)',
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  zIndex: 2,
+                  transform: 'rotate(-15deg)'
+                }}
+              />
+            </Box>
+
+            <Box sx={{ mt: offerDetails?.signature_path ? 0 : 4 }}>
+              <Typography variant="body1" fontWeight="bold">
+                {offerDetails?.user_name || "____________________"}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Authorized Signatory
+              </Typography>
+            </Box>
+          </Box>
         </Box>
       </Card>
-      
+
     </Box>
   );
 }
