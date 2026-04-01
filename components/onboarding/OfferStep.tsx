@@ -1,9 +1,10 @@
 'use client';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Box, Typography, Card, Divider, Stack, Button, CircularProgress } from '@mui/material';
 import DescriptionIcon from '@mui/icons-material/Description';
 import DownloadIcon from '@mui/icons-material/Download';
 import { useSelector } from '@/redux/store';
+import { getSignatureDisplay } from '@/api/offer';
 
 export default function OfferStep() {
   const { offerDetails, loading } = useSelector((state) => state.offers);
@@ -35,6 +36,18 @@ export default function OfferStep() {
       console.error('Error generating PDF:', error);
     }
   };
+
+  const [signatureUrl, setSignatureUrl] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!offerDetails?.signature_path) {
+      setSignatureUrl(undefined);
+      return;
+    }
+    getSignatureDisplay(offerDetails.signature_path)
+      .then(url => setSignatureUrl(url))
+      .catch(() => setSignatureUrl(undefined));
+  }, [offerDetails]);
 
   if (loading || !offerDetails) {
     return (
@@ -179,7 +192,7 @@ export default function OfferStep() {
             <Box sx={{ position: 'relative', width: 'fit-content' }}>
               {/* The Signature Image */}
               <img
-                src={offerDetails?.signature_path ? `http://localhost:5000/${offerDetails.signature_path.replace(/\\/g, '/').replace(/^\/+/, '')}` : undefined}
+                src={signatureUrl}
                 style={{
                   height: '70px',
                   display: 'block',
