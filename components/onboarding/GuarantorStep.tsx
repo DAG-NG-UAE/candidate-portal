@@ -38,14 +38,14 @@ const SectionHeader = ({ title, mt = 0 }: { title: string, mt?: number }) => (
 );
 
 const initialData: GuarantorFormData = {
-    guarantor_full_name: 'Ifeoma Okoro', email_address: 'ifeoma.okoro@hr.com', place_of_work_address: '123 Main St',
-    income_range: '9m-12m', relationship_with_employee: 'Family', relationship_other: '',
-    known_duration: '>10', known_duration_comment: 'She is my god-daughter',
-    assessment_character: 'Very good', assessment_comment: 'She is well behaved',
-    is_honest: 'To a large extent', recommend_for_employment: 'Yes', recommend_comment: 'She is very honest',
-    will_stand_as_guarantor: 'Yes', general_comment: 'She is a responsible person',
-    phone_number: '08012345678', house_address: '123 Main St',
-    declaration_agreed: true, digital_signature: 'Ifeoma Okoro', declaration_date: '2026-01-20'
+    guarantor_full_name: '', email_address: '', place_of_work_address: '',
+    income_range: '', relationship_with_employee: '', relationship_other: '',
+    known_duration: '', known_duration_comment: '',
+    assessment_character: '', assessment_comment: '',
+    is_honest: '', recommend_for_employment: '', recommend_comment: '',
+    will_stand_as_guarantor: '', general_comment: '',
+    phone_number: '', house_address: '',
+    declaration_agreed: true, digital_signature: '', declaration_date: ''
 };
 
 
