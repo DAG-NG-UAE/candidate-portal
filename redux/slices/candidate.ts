@@ -23,6 +23,7 @@ export const candidateSlice  = createSlice({
     reducers: { 
         startLoading(state) {
             state.loading = true;
+            state.error = null;
         },
         hasError(state, action) {
             state.loading = false;
@@ -48,15 +49,23 @@ export const verifyCandidateToken = async (token: string) => {
     try {
         dispatch(startLoading());
         const response = await verifyToken(token);
-        if(response.data.length == 0){ 
-            //send them to the success page
+
+        if (response?.type === 'NOT_FOUND') {
+            dispatch(hasError({ message: response.message }));
+            return;
+        }
+
+        // Success shape: { success: true, data: [...] }
+        const candidates = response?.data;
+        if (!candidates || candidates.length === 0) {
             dispatch(clearState());
             window.location.href = '/success';
-            
+            return;
         }
-        dispatch(setCandidate(response.data[0]));
+        dispatch(setCandidate(candidates[0]));
     } catch (error:any) {
-        dispatch(hasError(error?.response?.data || error));
+        const message = error?.response?.data?.message || error?.message || 'Unable to verify your link. Please try again or contact HR.';
+        dispatch(hasError({ message }));
     } finally {
         dispatch(stopLoading());
     }

@@ -3,6 +3,7 @@ import React, { useEffect, useState, Suspense } from 'react';
 import { Box, Typography, Button, Card, List, ListItem, ListItemIcon, ListItemText, Container, CircularProgress } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ApartmentIcon from '@mui/icons-material/Apartment';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Confetti from 'react-confetti';
@@ -61,6 +62,29 @@ function WelcomeContent() {
   ];
 
   const isButtonEnabled = !!candidate && !loading;
+  const errorMessage = (error as any)?.message || (typeof error === 'string' ? error : null);
+
+
+  console.log(error)
+  if (error && !loading) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 10% 20%, rgb(239, 246, 255) 0%, rgb(255, 255, 255) 90%)' }}>
+        <Container maxWidth="sm">
+          <Card sx={{ textAlign: 'center', p: 4, boxShadow: '0 20px 40px rgba(0,0,0,0.08)' }}>
+            <Box sx={{ width: 80, height: 80, bgcolor: '#FEE2E2', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 3 }}>
+              <ErrorOutlineIcon sx={{ fontSize: 40, color: '#DC2626' }} />
+            </Box>
+            <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 700, color: '#1E293B' }}>
+              Link Expired
+            </Typography>
+            <Typography variant="body1" sx={{ color: '#64748B' }}>
+              {errorMessage || 'This link is no longer valid. Please reach out to HR for assistance.'}
+            </Typography>
+          </Card>
+        </Container>
+      </Box>
+    );
+  }
 
   if (candidate && candidate.purpose !== 'offer') {
     return <PreOfferDocuments candidate={candidate} />;
@@ -192,11 +216,6 @@ function WelcomeContent() {
             {loading ? "Verifying Token..." : (isButtonEnabled ? "Begin Onboarding" : "Waiting for Verification")}
           </Button>
 
-          {error && (
-            <Typography color="error" variant="body2" sx={{ mt: 2 }}>
-                {(error as any)?.message || (typeof error === 'string' ? error : 'Verification failed. Please check your link.')}
-            </Typography>
-          )}
 
         </Card>
       </Container>

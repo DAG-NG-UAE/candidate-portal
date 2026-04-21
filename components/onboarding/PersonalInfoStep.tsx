@@ -16,13 +16,13 @@ import { useSelector } from '@/redux/store';
 
 const initialFormData: JoiningFormData = {
     first_name: '', last_name: '', middle_name: '', gender: '', dob: null,
-    place_of_birth: 'Nigeria', country_of_birth: 'Nigeria', nationality: 'Nigerian', marital_status: 'Single', religion: 'Christian', blood_group: '',
+    place_of_birth: 'Nigeria', country_of_birth: 'Nigeria', nationality: 'Nigerian', marital_status: '', religion: '', blood_group: '',
     languages: [],
     permanent_address: '', current_address: '', mobile_nigeria: '', personal_email: '',
     passport_number: '', passport_issue_date: null, passport_expiry_date: null, passport_place_of_issue: '',
-    has_driving_license: 'No', driving_license_number: '',
+    has_driving_license: '', driving_license_number: '',
     bank_name: '', account_number: '', account_type: '', pension_fund_account: '', gross_salary: 'Confidential',
-    relatives_in_company: { has_relative: 'No', name: '', relation: '', dept: '' },
+    relatives_in_company: { has_relative: '', name: '', relation: '', dept: '' },
     family_members: [],
     next_of_kin: { name: '', relationship: '', age: 0, address: '', phone: '' },
     emergency_primary: { name: '', relationship: '', address: '', phone: '' },
