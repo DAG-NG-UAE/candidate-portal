@@ -160,6 +160,15 @@ export const getCandidateDocuments = async (url: string) => {
   }
 }
 
+export const saveCompetencyProfile = async (payload: Record<string, any>) => {
+  try {
+    const response = await axiosInstance.put(`/candidate/competency`, payload);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export const getSignatureDisplay = async (signature_path: string): Promise<string> => {
   try {
     const response = await axiosInstance.get("/signature/display", {

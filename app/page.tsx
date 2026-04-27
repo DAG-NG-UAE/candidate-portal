@@ -10,6 +10,7 @@ import Confetti from 'react-confetti';
 import { useSelector } from '@/redux/store';
 import { verifyCandidateToken } from '@/redux/slices/candidate';
 import PreOfferDocuments from '@/components/pre-offer/PreOfferDocuments';
+import CompetencyProfileForm from '@/components/competency/CompetencyProfileForm';
 
 function WelcomeContent() {
   const searchParams = useSearchParams();
@@ -86,8 +87,12 @@ function WelcomeContent() {
     );
   }
 
-  if (candidate && candidate.purpose !== 'offer') {
+  if (candidate && candidate.purpose == 'pre_offer') {
     return <PreOfferDocuments candidate={candidate} />;
+  }
+
+  if (candidate && candidate.purpose == 'competency_profile') {
+    return <CompetencyProfileForm candidate={candidate} />;
   }
 
   return (
