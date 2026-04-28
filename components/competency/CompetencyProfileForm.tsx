@@ -316,7 +316,7 @@ export default function CompetencyProfileForm({ candidate }: Props) {
 
             <Box sx={{ width: half, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
               <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 500 }}>
-                Open to Relocation
+                Open to Relocation (Within Nigeria)
               </Typography>
               <ToggleButtonGroup
                 exclusive size="small"
